@@ -179,7 +179,10 @@ function render(){
       same.type='button'; same.className='same'; same.textContent='↺ mismo';
       const prev=()=>box.querySelectorAll('.weight')[i-1];
       const sync=()=>{same.style.display=prev().value?'inline-block':'none'};
-      same.addEventListener('click',()=>{input.value=prev().value});
+      same.addEventListener('click', () => {
+  input.value = prev().value;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+});
       prev().addEventListener('input',sync);
       setTimeout(sync,0);
       row.append(same);
