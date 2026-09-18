@@ -6,16 +6,12 @@
   <title>Ingeniería en Hipertrofia — MVP</title>
   <style>
     :root {
-      --ink:#14212b;
-      --gold:#c5a548;
-      --bg:#f4f5f6;
-      --card:#ffffff;
-      --muted:#6f7a82;
-      --line:#d9dee2;
+      --ink:#14212b; --gold:#c5a548; --bg:#f4f5f6; --card:#fff;
+      --muted:#6f7a82; --line:#d9dee2; --ok:#2f6f44; --bad:#a33;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
-    .header{background:var(--ink);color:white;padding:22px 18px 18px;border-bottom:3px solid var(--gold)}
+    .header{background:var(--ink);color:#fff;padding:22px 18px 18px;border-bottom:3px solid var(--gold)}
     .header h1{margin:0;font-size:21px;letter-spacing:.4px}
     .header p{margin:4px 0 0;color:var(--gold);font-size:13px}
     .wrap{max-width:560px;margin:0 auto;padding:18px}
@@ -34,10 +30,12 @@
     .same{display:none;border:1px solid var(--line);background:#f2f4f5;border-radius:7px;padding:9px 10px;cursor:pointer;font-weight:700;color:var(--ink)}
     textarea{width:100%;min-height:86px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:8px;font:inherit}
     .optional{color:var(--muted);font-size:12px;margin-top:4px}
-    button.primary{width:100%;margin-top:18px;border:0;border-radius:9px;padding:14px;background:var(--ink);color:white;font-size:16px;font-weight:700;cursor:pointer}
-    .status{margin-top:12px;min-height:20px;color:#2f6f44;font-weight:700;text-align:center}
-    .error{color:#a33}
+    button.primary{width:100%;margin-top:18px;border:0;border-radius:9px;padding:14px;background:var(--ink);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+    .status{margin-top:12px;min-height:20px;color:var(--ok);font-weight:700;text-align:center}
+    .error{color:var(--bad)}
     .loading{color:var(--muted)}
+    details.debug{margin-top:14px;color:var(--muted);font-size:12px}
+    details.debug pre{white-space:pre-wrap;word-break:break-word;background:#f7f8f9;padding:8px;border-radius:6px}
   </style>
 </head>
 <body>
@@ -96,6 +94,11 @@
         </form>
 
         <iframe name="hidden_iframe" id="hidden_iframe" style="display:none"></iframe>
+
+        <details class="debug">
+          <summary>Diagnóstico técnico</summary>
+          <pre id="debug"></pre>
+        </details>
       </div>
     </div>
   </div>
@@ -103,21 +106,76 @@
 <script>
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=2129342034&single=true&output=csv';
 
-function parseSimpleCsv(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(',').map(v => v.trim().replace(/^"|"$/g,''));
-  const values = lines[1].split(',').map(v => v.trim().replace(/^"|"$/g,''));
+function stripBom(s) {
+  return s.replace(/^\uFEFF/, '');
+}
+
+function normalizeHeader(s) {
+  return stripBom(String(s))
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_');
+}
+
+function detectDelimiter(line) {
+  const candidates = [',',';','\t'];
+  let best = ',', bestCount = -1;
+  for (const d of candidates) {
+    const count = line.split(d).length - 1;
+    if (count > bestCount) { best = d; bestCount = count; }
+  }
+  return best;
+}
+
+function splitCsvLine(line, delimiter) {
+  const out = [];
+  let cur = '', quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (quoted && line[i+1] === '"') { cur += '"'; i++; }
+      else quoted = !quoted;
+    } else if (ch === delimiter && !quoted) {
+      out.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map(v => v.trim());
+}
+
+function parseFirstDataRow(text) {
+  const clean = stripBom(text).trim();
+  const lines = clean.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) throw new Error('El CSV no contiene una fila de datos.');
+  const delimiter = detectDelimiter(lines[0]);
+  const headers = splitCsvLine(lines[0], delimiter).map(normalizeHeader);
+  const values = splitCsvLine(lines[1], delimiter);
   const obj = {};
-  headers.forEach((h,i) => obj[h] = values[i] ?? '');
-  return obj;
+  headers.forEach((h, i) => obj[h] = values[i] ?? '');
+  return { obj, delimiter, headers, rawFirstRow: lines[1] };
 }
 
 async function loadRoutine() {
+  const loading = document.getElementById('loading');
   try {
-    const res = await fetch(CSV_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error('No se pudo leer la rutina');
+    const res = await fetch(CSV_URL, { cache:'no-store' });
+    if (!res.ok) throw new Error('No se pudo leer la rutina. HTTP ' + res.status);
     const text = await res.text();
-    const r = parseSimpleCsv(text);
+
+    if (/^\s*<!doctype html/i.test(text) || /^\s*<html/i.test(text)) {
+      throw new Error('La URL devolvió HTML en vez de CSV.');
+    }
+
+    const parsed = parseFirstDataRow(text);
+    const r = parsed.obj;
+
+    if (!r.ejercicio || !r.dia || !r.series || !r.reps || !r.tempo) {
+      throw new Error('Se leyó el archivo, pero faltan columnas esperadas. Encabezados detectados: ' + parsed.headers.join(' | '));
+    }
 
     document.getElementById('dia').textContent = r.dia;
     document.getElementById('ejercicio').textContent = r.ejercicio;
@@ -125,15 +183,20 @@ async function loadRoutine() {
     document.getElementById('reps').textContent = r.reps;
     document.getElementById('tempo').textContent = r.tempo;
 
-    document.getElementById('tokenField').value = r.token;
+    document.getElementById('tokenField').value = r.token || '';
     document.getElementById('diaField').value = r.dia;
     document.getElementById('ejercicioField').value = r.ejercicio;
 
-    document.getElementById('loading').style.display = 'none';
+    document.getElementById('debug').textContent =
+      'Separador detectado: ' + JSON.stringify(parsed.delimiter) + '\n' +
+      'Encabezados: ' + parsed.headers.join(' | ') + '\n' +
+      'Primera fila: ' + parsed.rawFirstRow;
+
+    loading.style.display = 'none';
     document.getElementById('app').style.display = 'block';
   } catch (err) {
-    document.getElementById('loading').textContent = 'Error al cargar la rutina: ' + err.message;
-    document.getElementById('loading').classList.add('error');
+    loading.textContent = 'Error al cargar la rutina: ' + err.message;
+    loading.classList.add('error');
   }
 }
 
@@ -143,12 +206,9 @@ const s3 = document.getElementById('s3');
 const same2 = document.getElementById('same2');
 const same3 = document.getElementById('same3');
 
-s1.addEventListener('input', () => {
-  same2.style.display = s1.value ? 'inline-block' : 'none';
-});
-s2.addEventListener('input', () => {
-  same3.style.display = s2.value ? 'inline-block' : 'none';
-});
+s1.addEventListener('input', () => same2.style.display = s1.value ? 'inline-block' : 'none');
+s2.addEventListener('input', () => same3.style.display = s2.value ? 'inline-block' : 'none');
+
 same2.addEventListener('click', () => {
   s2.value = s1.value;
   s2.dispatchEvent(new Event('input'));
@@ -160,9 +220,7 @@ same3.addEventListener('click', () => {
 document.getElementById('registroForm').addEventListener('submit', () => {
   const status = document.getElementById('status');
   status.textContent = 'Guardando…';
-  setTimeout(() => {
-    status.textContent = '✓ Registro enviado';
-  }, 1200);
+  setTimeout(() => status.textContent = '✓ Registro enviado', 1200);
 });
 
 loadRoutine();
