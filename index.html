@@ -1,229 +1,248 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ingeniería en Hipertrofia — MVP</title>
-  <style>
-    :root {
-      --ink:#14212b; --gold:#c5a548; --bg:#f4f5f6; --card:#fff;
-      --muted:#6f7a82; --line:#d9dee2; --ok:#2f6f44; --bad:#a33;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
-    .header{background:var(--ink);color:#fff;padding:22px 18px 18px;border-bottom:3px solid var(--gold)}
-    .header h1{margin:0;font-size:21px;letter-spacing:.4px}
-    .header p{margin:4px 0 0;color:var(--gold);font-size:13px}
-    .wrap{max-width:560px;margin:0 auto;padding:18px}
-    .card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 3px 12px rgba(0,0,0,.06)}
-    .eyebrow{color:var(--gold);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
-    h2{margin:0 0 12px;font-size:23px}
-    .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px}
-    .meta div{background:#f7f8f9;border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
-    .meta b{display:block;font-size:16px}
-    .meta span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
-    .section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px}
-    .series-row{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
-    .series-row label{width:62px;font-weight:700}
-    .weight{width:100px;padding:11px 12px;font-size:18px;border:1px solid var(--line);border-radius:8px}
-    .unit{color:var(--muted);font-weight:700}
-    .same{display:none;border:1px solid var(--line);background:#f2f4f5;border-radius:7px;padding:9px 10px;cursor:pointer;font-weight:700;color:var(--ink)}
-    textarea{width:100%;min-height:86px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:8px;font:inherit}
-    .optional{color:var(--muted);font-size:12px;margin-top:4px}
-    button.primary{width:100%;margin-top:18px;border:0;border-radius:9px;padding:14px;background:var(--ink);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
-    .status{margin-top:12px;min-height:20px;color:var(--ok);font-weight:700;text-align:center}
-    .error{color:var(--bad)}
-    .loading{color:var(--muted)}
-    details.debug{margin-top:14px;color:var(--muted);font-size:12px}
-    details.debug pre{white-space:pre-wrap;word-break:break-word;background:#f7f8f9;padding:8px;border-radius:6px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ingeniería en Hipertrofia — MVP</title>
+<style>
+:root{--ink:#14212b;--gold:#c5a548;--bg:#f4f5f6;--card:#fff;--muted:#6f7a82;--line:#d9dee2;--ok:#2f6f44}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+.header{background:var(--ink);color:#fff;padding:20px 18px 16px;border-bottom:3px solid var(--gold)}
+.header h1{margin:0;font-size:21px}
+.header p{margin:4px 0 0;color:var(--gold);font-size:13px}
+.wrap{max-width:560px;margin:0 auto;padding:18px}
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 3px 12px rgba(0,0,0,.06)}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.eyebrow{color:var(--gold);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+.progress{font-size:12px;color:var(--muted);font-weight:700}
+h2{margin:7px 0 12px;font-size:25px}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px}
+.meta div{background:#f7f8f9;border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
+.meta b{display:block;font-size:16px}
+.meta span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px}
+.series-row{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
+.series-row label{width:62px;font-weight:700}
+.weight{width:100px;padding:11px 12px;font-size:18px;border:1px solid var(--line);border-radius:8px}
+.unit{color:var(--muted);font-weight:700}
+.same{display:none;border:1px solid var(--line);background:#f2f4f5;border-radius:7px;padding:9px 10px;cursor:pointer;font-weight:700;color:var(--ink)}
+textarea{width:100%;min-height:84px;padding:12px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.optional{color:var(--muted);font-size:12px;margin-top:4px}
+.actions{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:18px}
+button{cursor:pointer}
+button.secondary{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:14px;font-size:15px;font-weight:700}
+button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;padding:14px;font-size:15px;font-weight:700}
+.status{min-height:20px;margin-top:10px;text-align:center;color:var(--ok);font-weight:700}
+.hidden{display:none!important}
+.loading{color:var(--muted)}
+</style>
 </head>
 <body>
-  <div class="header">
-    <h1>INGENIERÍA EN HIPERTROFIA</h1>
-    <p>Prescripción de Entrenamiento Individualizada</p>
-  </div>
+<div class="header">
+  <h1>INGENIERÍA EN HIPERTROFIA</h1>
+  <p>Prescripción de Entrenamiento Individualizada</p>
+</div>
 
-  <div class="wrap">
-    <div class="card">
-      <div id="loading" class="loading">Cargando rutina…</div>
+<div class="wrap">
+  <div class="card">
+    <div id="loading" class="loading">Cargando rutina…</div>
 
-      <div id="app" style="display:none">
+    <div id="app" class="hidden">
+      <div class="topline">
         <div class="eyebrow">Día <span id="dia"></span></div>
-        <h2 id="ejercicio"></h2>
-
-        <div class="meta">
-          <div><b id="series"></b><span>series</span></div>
-          <div><b id="reps"></b><span>repeticiones</span></div>
-          <div><b id="tempo"></b><span>tempo</span></div>
-        </div>
-
-        <form id="registroForm" action="https://docs.google.com/forms/d/e/1FAIpQLScIL5PUjSIgu19oF0nnNEcuQpafBtBVYNKYZjoMCpwYzuVFAQ/formResponse" method="POST" target="hidden_iframe">
-          <input type="hidden" name="entry.1517609992" id="tokenField">
-          <input type="hidden" name="entry.972414767" id="diaField">
-          <input type="hidden" name="entry.358785913" id="ejercicioField">
-
-          <div class="section-title">Pesos utilizados</div>
-
-          <div class="series-row">
-            <label>Serie 1</label>
-            <input class="weight" id="s1" name="entry.885442605" type="number" inputmode="decimal" step="0.1">
-            <span class="unit">kg</span>
-          </div>
-
-          <div class="series-row">
-            <label>Serie 2</label>
-            <input class="weight" id="s2" name="entry.1707252272" type="number" inputmode="decimal" step="0.1">
-            <span class="unit">kg</span>
-            <button class="same" id="same2" type="button">↺ mismo</button>
-          </div>
-
-          <div class="series-row">
-            <label>Serie 3</label>
-            <input class="weight" id="s3" name="entry.1694946076" type="number" inputmode="decimal" step="0.1">
-            <span class="unit">kg</span>
-            <button class="same" id="same3" type="button">↺ mismo</button>
-          </div>
-
-          <div class="section-title">¿Algo relevante sobre este ejercicio?</div>
-          <textarea name="entry.813523569" placeholder="Escribí acá solo si hay algo que quieras registrar…"></textarea>
-          <div class="optional">Opcional</div>
-
-          <button class="primary" type="submit">Siguiente ejercicio →</button>
-          <div class="status" id="status"></div>
-        </form>
-
-        <iframe name="hidden_iframe" id="hidden_iframe" style="display:none"></iframe>
-
-        <details class="debug">
-          <summary>Diagnóstico técnico</summary>
-          <pre id="debug"></pre>
-        </details>
+        <div class="progress" id="progress"></div>
       </div>
+
+      <h2 id="ejercicio"></h2>
+
+      <div class="meta">
+        <div><b id="series"></b><span>series</span></div>
+        <div><b id="reps"></b><span>repeticiones</span></div>
+        <div><b id="tempo"></b><span>tempo</span></div>
+      </div>
+
+      <div class="section-title">Pesos utilizados</div>
+      <div id="seriesBox"></div>
+
+      <div class="section-title">¿Algo relevante sobre este ejercicio?</div>
+      <textarea id="comentario" placeholder="Escribí acá solo si hay algo que quieras registrar…"></textarea>
+      <div class="optional">Opcional</div>
+
+      <div class="actions">
+        <button id="prevBtn" class="secondary" type="button">← Ejercicio anterior</button>
+        <button id="nextBtn" class="primary" type="button">Siguiente ejercicio →</button>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <form id="sendForm" action="https://docs.google.com/forms/d/e/1FAIpQLScIL5PUjSIgu19oF0nnNEcuQpafBtBVYNKYZjoMCpwYzuVFAQ/formResponse" method="POST" target="hidden_iframe" class="hidden">
+        <input type="hidden" name="entry.1517609992" id="fToken">
+        <input type="hidden" name="entry.972414767" id="fDia">
+        <input type="hidden" name="entry.358785913" id="fEjercicio">
+        <input type="hidden" name="entry.885442605" id="fS1">
+        <input type="hidden" name="entry.1707252272" id="fS2">
+        <input type="hidden" name="entry.1694946076" id="fS3">
+        <input type="hidden" name="entry.813523569" id="fComentario">
+      </form>
+      <iframe name="hidden_iframe" class="hidden"></iframe>
+    </div>
+
+    <div id="done" class="hidden">
+      <div class="eyebrow">Entrenamiento</div>
+      <h2>✓ Día completado</h2>
+      <p>Los registros fueron enviados.</p>
+      <button id="reviewBtn" class="secondary" type="button">Revisar entrenamiento</button>
     </div>
   </div>
+</div>
 
 <script>
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=2129342034&single=true&output=csv';
+let rows = [];
+let current = 0;
+let state = {};
 
-function stripBom(s) {
-  return s.replace(/^\uFEFF/, '');
+function stripBom(s){return s.replace(/^\uFEFF/,'')}
+function normalizeHeader(s){
+  return stripBom(String(s)).trim().toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_');
 }
-
-function normalizeHeader(s) {
-  return stripBom(String(s))
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_');
-}
-
-function detectDelimiter(line) {
-  const candidates = [',',';','\t'];
-  let best = ',', bestCount = -1;
-  for (const d of candidates) {
-    const count = line.split(d).length - 1;
-    if (count > bestCount) { best = d; bestCount = count; }
-  }
+function detectDelimiter(line){
+  const ds=[',',';','\t']; let best=',',n=-1;
+  for(const d of ds){const c=line.split(d).length-1;if(c>n){best=d;n=c}}
   return best;
 }
-
-function splitCsvLine(line, delimiter) {
-  const out = [];
-  let cur = '', quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (quoted && line[i+1] === '"') { cur += '"'; i++; }
-      else quoted = !quoted;
-    } else if (ch === delimiter && !quoted) {
-      out.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
+function splitCsvLine(line,d){
+  const out=[]; let cur='',q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(q && line[i+1]==='"'){cur+='"';i++} else q=!q;
+    } else if(ch===d && !q){out.push(cur);cur=''} else cur+=ch;
   }
-  out.push(cur);
-  return out.map(v => v.trim());
+  out.push(cur); return out.map(v=>v.trim());
 }
-
-function parseFirstDataRow(text) {
-  const clean = stripBom(text).trim();
-  const lines = clean.split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) throw new Error('El CSV no contiene una fila de datos.');
-  const delimiter = detectDelimiter(lines[0]);
-  const headers = splitCsvLine(lines[0], delimiter).map(normalizeHeader);
-  const values = splitCsvLine(lines[1], delimiter);
-  const obj = {};
-  headers.forEach((h, i) => obj[h] = values[i] ?? '');
-  return { obj, delimiter, headers, rawFirstRow: lines[1] };
+function parseCsv(text){
+  const lines=stripBom(text).trim().split(/\r?\n/).filter(Boolean);
+  const d=detectDelimiter(lines[0]);
+  const headers=splitCsvLine(lines[0],d).map(normalizeHeader);
+  return lines.slice(1).map(line=>{
+    const vals=splitCsvLine(line,d),o={};
+    headers.forEach((h,i)=>o[h]=vals[i]??'');
+    return o;
+  });
 }
+function keyFor(r){return `${r.token}|${r.dia}|${r.orden}|${r.ejercicio}`}
+function saveCurrent(){
+  const r=rows[current], key=keyFor(r);
+  const weights=[...document.querySelectorAll('.weight')].map(el=>el.value);
+  state[key]={weights, comentario:document.getElementById('comentario').value};
+  localStorage.setItem('mvpRutinaState', JSON.stringify(state));
+}
+function loadStored(){
+  try{state=JSON.parse(localStorage.getItem('mvpRutinaState')||'{}')}catch(e){state={}}
+}
+function render(){
+  const r=rows[current];
+  document.getElementById('dia').textContent=r.dia;
+  document.getElementById('ejercicio').textContent=r.ejercicio;
+  document.getElementById('series').textContent=r.series;
+  document.getElementById('reps').textContent=r.reps;
+  document.getElementById('tempo').textContent=r.tempo;
+  document.getElementById('progress').textContent=`Ejercicio ${current+1} de ${rows.length}`;
 
-async function loadRoutine() {
-  const loading = document.getElementById('loading');
-  try {
-    const res = await fetch(CSV_URL, { cache:'no-store' });
-    if (!res.ok) throw new Error('No se pudo leer la rutina. HTTP ' + res.status);
-    const text = await res.text();
+  const n=Math.max(1,parseInt(r.series,10)||3);
+  const saved=state[keyFor(r)]||{weights:[],comentario:''};
+  const box=document.getElementById('seriesBox');
+  box.innerHTML='';
 
-    if (/^\s*<!doctype html/i.test(text) || /^\s*<html/i.test(text)) {
-      throw new Error('La URL devolvió HTML en vez de CSV.');
+  for(let i=0;i<n;i++){
+    const row=document.createElement('div');
+    row.className='series-row';
+
+    const label=document.createElement('label');
+    label.textContent=`Serie ${i+1}`;
+
+    const input=document.createElement('input');
+    input.type='number'; input.step='0.1'; input.inputMode='decimal';
+    input.className='weight';
+    input.value=saved.weights[i]||'';
+
+    const unit=document.createElement('span');
+    unit.className='unit'; unit.textContent='kg';
+
+    row.append(label,input,unit);
+
+    if(i>0){
+      const same=document.createElement('button');
+      same.type='button'; same.className='same'; same.textContent='↺ mismo';
+      const prev=()=>box.querySelectorAll('.weight')[i-1];
+      const sync=()=>{same.style.display=prev().value?'inline-block':'none'};
+      same.addEventListener('click',()=>{input.value=prev().value});
+      prev().addEventListener('input',sync);
+      setTimeout(sync,0);
+      row.append(same);
     }
-
-    const parsed = parseFirstDataRow(text);
-    const r = parsed.obj;
-
-    if (!r.ejercicio || !r.dia || !r.series || !r.reps || !r.tempo) {
-      throw new Error('Se leyó el archivo, pero faltan columnas esperadas. Encabezados detectados: ' + parsed.headers.join(' | '));
-    }
-
-    document.getElementById('dia').textContent = r.dia;
-    document.getElementById('ejercicio').textContent = r.ejercicio;
-    document.getElementById('series').textContent = r.series;
-    document.getElementById('reps').textContent = r.reps;
-    document.getElementById('tempo').textContent = r.tempo;
-
-    document.getElementById('tokenField').value = r.token || '';
-    document.getElementById('diaField').value = r.dia;
-    document.getElementById('ejercicioField').value = r.ejercicio;
-
-    document.getElementById('debug').textContent =
-      'Separador detectado: ' + JSON.stringify(parsed.delimiter) + '\n' +
-      'Encabezados: ' + parsed.headers.join(' | ') + '\n' +
-      'Primera fila: ' + parsed.rawFirstRow;
-
-    loading.style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  } catch (err) {
-    loading.textContent = 'Error al cargar la rutina: ' + err.message;
-    loading.classList.add('error');
+    box.append(row);
   }
+
+  document.getElementById('comentario').value=saved.comentario||'';
+  document.getElementById('prevBtn').style.visibility=current===0?'hidden':'visible';
+  document.getElementById('nextBtn').textContent=current===rows.length-1?'Finalizar entrenamiento':'Siguiente ejercicio →';
+  document.getElementById('status').textContent='';
 }
 
-const s1 = document.getElementById('s1');
-const s2 = document.getElementById('s2');
-const s3 = document.getElementById('s3');
-const same2 = document.getElementById('same2');
-const same3 = document.getElementById('same3');
+function sendCurrent(){
+  const r=rows[current], saved=state[keyFor(r)]||{weights:[],comentario:''};
+  document.getElementById('fToken').value=r.token||'';
+  document.getElementById('fDia').value=r.dia||'';
+  document.getElementById('fEjercicio').value=r.ejercicio||'';
+  document.getElementById('fS1').value=saved.weights[0]||'';
+  document.getElementById('fS2').value=saved.weights[1]||'';
+  document.getElementById('fS3').value=saved.weights[2]||'';
+  document.getElementById('fComentario').value=saved.comentario||'';
+  document.getElementById('sendForm').submit();
+}
 
-s1.addEventListener('input', () => same2.style.display = s1.value ? 'inline-block' : 'none');
-s2.addEventListener('input', () => same3.style.display = s2.value ? 'inline-block' : 'none');
-
-same2.addEventListener('click', () => {
-  s2.value = s1.value;
-  s2.dispatchEvent(new Event('input'));
+document.getElementById('prevBtn').addEventListener('click',()=>{
+  saveCurrent();
+  if(current>0){current--;render()}
 });
-same3.addEventListener('click', () => {
-  s3.value = s2.value;
+document.getElementById('nextBtn').addEventListener('click',()=>{
+  saveCurrent();
+  sendCurrent();
+  document.getElementById('status').textContent='✓ Guardado';
+  setTimeout(()=>{
+    if(current<rows.length-1){current++;render()}
+    else{
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('done').classList.remove('hidden');
+    }
+  },350);
+});
+document.getElementById('reviewBtn').addEventListener('click',()=>{
+  document.getElementById('done').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  current=0; render();
 });
 
-document.getElementById('registroForm').addEventListener('submit', () => {
-  const status = document.getElementById('status');
-  status.textContent = 'Guardando…';
-  setTimeout(() => status.textContent = '✓ Registro enviado', 1200);
-});
-
-loadRoutine();
+(async()=>{
+  try{
+    loadStored();
+    const res=await fetch(CSV_URL,{cache:'no-store'});
+    const text=await res.text();
+    rows=parseCsv(text)
+      .filter(r=>r.ejercicio && r.dia)
+      .sort((a,b)=>(a.dia||'').localeCompare(b.dia||'') || (Number(a.orden)||0)-(Number(b.orden)||0));
+    if(!rows.length) throw new Error('No hay ejercicios válidos en MVP_Public.');
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    render();
+  }catch(e){
+    document.getElementById('loading').textContent='Error al cargar la rutina: '+e.message;
+  }
+})();
 </script>
 </body>
 </html>
