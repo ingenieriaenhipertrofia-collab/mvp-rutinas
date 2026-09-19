@@ -93,6 +93,8 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
         <input type="hidden" name="entry.885442605" id="fS1">
         <input type="hidden" name="entry.1707252272" id="fS2">
         <input type="hidden" name="entry.1694946076" id="fS3">
+        <input type="hidden" name="entry.2046290839" id="fS4">
+        <input type="hidden" name="entry.1643803565" id="fS5">
         <input type="hidden" name="entry.813523569" id="fComentario">
       </form>
       <iframe name="hidden_iframe" class="hidden"></iframe>
@@ -124,7 +126,7 @@ function localDateKey(){
 }
 
 function storageKey(){
-  return `mvpRutinaState:v2:${localDateKey()}`;
+  return `mvpRutinaState:v3:${localDateKey()}`;
 }
 
 function stripBom(s){return s.replace(/^\uFEFF/,'')}
@@ -215,14 +217,16 @@ function render(){
   const fromToday=todayRec ? [
     todayRec.hoy_s1 || '',
     todayRec.hoy_s2 || '',
-    todayRec.hoy_s3 || ''
+    todayRec.hoy_s3 || '',
+    todayRec.hoy_s4 || '',
+    todayRec.hoy_s5 || ''
   ] : [];
 
-  // Si ya hay datos locales de esta sesión, se conservan.
-  // Pero un estado local vacío NO debe tapar los pesos de hoy recuperados desde Sheets.
+  // Conserva dinámicamente tantas series como indique la rutina.
+  // Si no hay valor local, usa el valor recuperado de hoy desde Sheets.
   const localSaved = state[keyFor(r)] || {weights:[],comentario:''};
   const localWeights = localSaved.weights || [];
-  const mergedWeights = [0,1,2].map(i => {
+  const mergedWeights = Array.from({length:n}, (_,i) => {
     const localValue = String(localWeights[i] ?? '').trim();
     return localValue !== '' ? localWeights[i] : (fromToday[i] || '');
   });
@@ -289,6 +293,8 @@ function sendCurrent(){
   document.getElementById('fS1').value=saved.weights[0]||'';
   document.getElementById('fS2').value=saved.weights[1]||'';
   document.getElementById('fS3').value=saved.weights[2]||'';
+  document.getElementById('fS4').value=saved.weights[3]||'';
+  document.getElementById('fS5').value=saved.weights[4]||'';
   document.getElementById('fComentario').value=saved.comentario||'';
   document.getElementById('sendForm').submit();
   return true;
