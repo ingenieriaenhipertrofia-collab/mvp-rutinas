@@ -175,6 +175,20 @@ function getLastRecord(r){
     (x.ejercicio||'').trim().toLowerCase()===ex
   );
 }
+
+function getTodayRecord(r){
+  const token=(r.token||'').trim();
+  const ex=(r.ejercicio||'').trim().toLowerCase();
+  return lastRows.find(x =>
+    (x.token||'').trim()===token &&
+    (x.ejercicio||'').trim().toLowerCase()===ex &&
+    (
+      String(x.hoy_s1||'').trim()!=='' ||
+      String(x.hoy_s2||'').trim()!=='' ||
+      String(x.hoy_s3||'').trim()!==''
+    )
+  );
+}
 function renderLast(r){
   const box=document.getElementById('lastBox');
   const rec=getLastRecord(r);
@@ -197,7 +211,13 @@ function render(){
   renderLast(r);
 
   const n=Math.max(1,parseInt(r.series,10)||3);
-  const saved=state[keyFor(r)]||{weights:[],comentario:''};
+  const todayRec=getTodayRecord(r);
+  const fromToday=todayRec ? [
+    todayRec.hoy_s1 || '',
+    todayRec.hoy_s2 || '',
+    todayRec.hoy_s3 || ''
+  ] : [];
+  const saved=state[keyFor(r)] || {weights:fromToday,comentario:''};
   const box=document.getElementById('seriesBox');
   box.innerHTML='';
 
