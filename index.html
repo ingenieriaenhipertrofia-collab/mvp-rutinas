@@ -124,7 +124,7 @@ function localDateKey(){
 }
 
 function storageKey(){
-  return `mvpRutinaState:${localDateKey()}`;
+  return `mvpRutinaState:v2:${localDateKey()}`;
 }
 
 function stripBom(s){return s.replace(/^\uFEFF/,'')}
@@ -217,7 +217,19 @@ function render(){
     todayRec.hoy_s2 || '',
     todayRec.hoy_s3 || ''
   ] : [];
-  const saved=state[keyFor(r)] || {weights:fromToday,comentario:''};
+
+  // Si ya hay datos locales de esta sesión, se conservan.
+  // Pero un estado local vacío NO debe tapar los pesos de hoy recuperados desde Sheets.
+  const localSaved = state[keyFor(r)] || {weights:[],comentario:''};
+  const localWeights = localSaved.weights || [];
+  const mergedWeights = [0,1,2].map(i => {
+    const localValue = String(localWeights[i] ?? '').trim();
+    return localValue !== '' ? localWeights[i] : (fromToday[i] || '');
+  });
+  const saved = {
+    weights: mergedWeights,
+    comentario: localSaved.comentario || ''
+  };
   const box=document.getElementById('seriesBox');
   box.innerHTML='';
 
