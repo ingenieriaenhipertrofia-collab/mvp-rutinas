@@ -150,10 +150,10 @@ function saveCurrent(){
   const r=rows[current], key=keyFor(r);
   const weights=[...document.querySelectorAll('.weight')].map(el=>el.value);
   state[key]={weights, comentario:document.getElementById('comentario').value};
-  localStorage.setItem('mvpRutinaState', JSON.stringify(state));
+  sessionStorage.setItem('mvpRutinaState', JSON.stringify(state));
 }
 function loadStored(){
-  try{state=JSON.parse(localStorage.getItem('mvpRutinaState')||'{}')}catch(e){state={}}
+  try{state=JSON.parse(sessionStorage.getItem('mvpRutinaState')||'{}')}catch(e){state={}}
 }
 function getLastRecord(r){
   const token=(r.token||'').trim();
