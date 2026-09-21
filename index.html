@@ -56,6 +56,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 </style>
 </head>
 <body>
+<!-- MVP version: video-claves-v2 -->
 <div class="header">
   <h1>INGENIERÍA EN HIPERTROFIA</h1>
   <p>Prescripción de Entrenamiento Individualizada</p>
@@ -385,7 +386,11 @@ document.getElementById('reviewBtn').addEventListener('click',()=>{
 (async()=>{
   try{
     loadStored();
-    const [res,lastRes]=await Promise.all([fetch(CSV_URL,{cache:'no-store'}),fetch(LAST_CSV_URL,{cache:'no-store'})]);
+    const bust='&t='+Date.now();
+    const [res,lastRes]=await Promise.all([
+      fetch(CSV_URL+bust,{cache:'no-store'}),
+      fetch(LAST_CSV_URL+bust,{cache:'no-store'})
+    ]);
     const text=await res.text();
     const lastText=await lastRes.text();
     rows=parseCsv(text)
