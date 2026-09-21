@@ -40,6 +40,19 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .status{min-height:20px;margin-top:10px;text-align:center;color:var(--ok);font-weight:700}
 .hidden{display:none!important}
 .loading{color:var(--muted)}
+
+.video-wrap{margin:14px 0 4px}
+.video-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:12px;text-decoration:none;font-weight:700;border:1px solid #d7dbe0;background:#fff;color:#111}
+.video-btn.hidden{display:none}
+.keys-box{margin:12px 0 18px;border:1px solid #e1e4e8;border-radius:14px;overflow:hidden;background:#fff}
+.keys-box summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700;user-select:none}
+.keys-box summary::-webkit-details-marker{display:none}
+.keys-box summary::after{content:'＋';float:right;font-weight:600}
+.keys-box[open] summary::after{content:'−'}
+.keys-content{padding:0 16px 14px}
+.key-item{margin-top:10px;line-height:1.45}
+.key-item b{display:block;margin-bottom:2px}
+
 </style>
 </head>
 <body>
@@ -65,6 +78,19 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
         <div><b id="reps"></b><span>repeticiones</span></div>
         <div><b id="tempo"></b><span>tempo</span></div>
       </div>
+
+      <div class="video-wrap">
+        <a id="videoBtn" class="video-btn hidden" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
+      </div>
+
+      <details id="keysBox" class="keys-box hidden">
+        <summary>Claves de ejecución</summary>
+        <div class="keys-content">
+          <div id="intencionWrap" class="key-item hidden"><b>Intención</b><span id="intencion"></span></div>
+          <div id="sensacionWrap" class="key-item hidden"><b>Sensación</b><span id="sensacion"></span></div>
+          <div id="errorWrap" class="key-item hidden"><b>Error a evitar</b><span id="errorEvitar"></span></div>
+        </div>
+      </details>
 
       <div id="lastBox" class="last-box">
         <div class="last-title">Último registro</div>
@@ -210,6 +236,40 @@ function render(){
   document.getElementById('reps').textContent=r.reps;
   document.getElementById('tempo').textContent=r.tempo;
   document.getElementById('progress').textContent=`Ejercicio ${current+1} de ${rows.length}`;
+
+  const videoBtn=document.getElementById('videoBtn');
+  const videoUrl=String(r.video_url||'').trim();
+  if(videoUrl){
+    videoBtn.href=videoUrl;
+    videoBtn.classList.remove('hidden');
+  }else{
+    videoBtn.href='#';
+    videoBtn.classList.add('hidden');
+  }
+
+  const keysBox=document.getElementById('keysBox');
+  const fields=[
+    ['intencionWrap','intencion',r.intencion],
+    ['sensacionWrap','sensacion',r.sensacion],
+    ['errorWrap','errorEvitar',r.error_evitar]
+  ];
+  let hasKeys=false;
+  fields.forEach(([wrapId,textId,value])=>{
+    const wrap=document.getElementById(wrapId);
+    const target=document.getElementById(textId);
+    const clean=String(value||'').trim();
+    if(clean){
+      target.textContent=clean;
+      wrap.classList.remove('hidden');
+      hasKeys=true;
+    }else{
+      target.textContent='';
+      wrap.classList.add('hidden');
+    }
+  });
+  keysBox.open=false;
+  keysBox.classList.toggle('hidden',!hasKeys);
+
   renderLast(r);
 
   const n=Math.max(1,parseInt(r.series,10)||3);
