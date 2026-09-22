@@ -136,10 +136,12 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 </div>
 
 <script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=2129342034&single=true&output=csv';
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMHhQr9bZmTQkw67Aj7v5mRXRIC-T3tUfkO8sxtBgcYcXBid-mEV31OaBbUagrK8csm32ON9a0rVuX/pub?gid=339469399&single=true&output=csv';
+const EXERCISES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=41200741&single=true&output=csv';
 const LAST_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFcFqAzKtXE84pCJint6E2yeH9yFAYlFIVMgIA77Tcdvdy2O1og4qe-T-RgZqiFRS8UX1Fn0Y35TlU/pub?gid=1347015392&single=true&output=csv';
 let rows = [];
 let lastRows = [];
+let exerciseLibrary = [];
 let current = 0;
 let state = {};
 
@@ -226,6 +228,25 @@ function renderLast(r){
   document.getElementById('lastValues').textContent=vals.join(' / ')+' kg';
   document.getElementById('lastDate').textContent=rec.fecha ? 'Registro anterior: '+rec.fecha : '';
   box.style.display='block';
+}
+
+
+function enrichRoutineRows(routineRows, libraryRows){
+  const byId = new Map(
+    libraryRows
+      .filter(x=>x.id_ejercicio)
+      .map(x=>[String(x.id_ejercicio).trim(), x])
+  );
+  return routineRows.map(r=>{
+    const lib = byId.get(String(r.id_ejercicio||'').trim()) || {};
+    return {
+      ...r,
+      video_url: lib.video_url || '',
+      intencion: lib.intencion || '',
+      sensacion: lib.sensacion || '',
+      error_evitar: lib.error_evitar || ''
+    };
+  });
 }
 
 function render(){
@@ -397,17 +418,28 @@ document.getElementById('reviewBtn').addEventListener('click',()=>{
   try{
     loadStored();
     const bust='&t='+Date.now();
-    const [res,lastRes]=await Promise.all([
+    const [res,lastRes,libRes]=await Promise.all([
       fetch(CSV_URL+bust,{cache:'no-store'}),
-      fetch(LAST_CSV_URL+bust,{cache:'no-store'})
+      fetch(LAST_CSV_URL+bust,{cache:'no-store'}),
+      fetch(EXERCISES_CSV_URL+bust,{cache:'no-store'})
     ]);
     const text=await res.text();
     const lastText=await lastRes.text();
-    rows=parseCsv(text)
-      .filter(r=>r.ejercicio && r.dia)
+    const libText=await libRes.text();
+
+    const params=new URLSearchParams(window.location.search);
+    const urlToken=(params.get('token')||'lara-test').trim();
+
+    exerciseLibrary=parseCsv(libText);
+    rows=enrichRoutineRows(
+      parseCsv(text)
+        .filter(r=>r.ejercicio && r.dia && String(r.token||'').trim()===urlToken),
+      exerciseLibrary
+    )
       .sort((a,b)=>(a.dia||'').localeCompare(b.dia||'') || (Number(a.orden)||0)-(Number(b.orden)||0));
+
     lastRows=parseCsv(lastText);
-    if(!rows.length) throw new Error('No hay ejercicios válidos en MVP_Public.');
+    if(!rows.length) throw new Error('No hay una rutina vigente para este token.');
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     render();
