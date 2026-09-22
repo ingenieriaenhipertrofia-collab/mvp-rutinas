@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel entrenador · Biblioteca</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f5f6f8;margin:0;color:#16181d}
+.header{background:#111827;color:white;padding:22px 18px}
+.header h1{margin:0;font-size:22px}.header p{margin:5px 0 0;opacity:.75;font-size:14px}
+.wrap{max-width:760px;margin:28px auto;padding:0 16px}
+.card{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.04)}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+.search-wrap{position:relative}
+input{width:100%;padding:14px 15px;border:1px solid #cfd4dc;border-radius:12px;font-size:16px;box-sizing:border-box}
+.results{position:absolute;left:0;right:0;top:54px;background:white;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.12);display:none;z-index:5}
+.result{padding:12px 14px;border-bottom:1px solid #e5e7eb;cursor:pointer}.result:last-child{border-bottom:0}.result:hover{background:#f9fafb}
+.selected{display:none;margin-top:24px}.selected h2{margin:0 0 4px}.id{font-size:12px;color:#6b7280;margin-bottom:14px}
+.field{padding:13px 0;border-top:1px solid #e5e7eb}.field b{display:block;font-size:13px;margin-bottom:5px}
+.video{display:inline-flex;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;text-decoration:none;color:#16181d;font-weight:700}
+.muted{color:#6b7280}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Panel del entrenador</h1>
+  <p>Biblioteca de ejercicios · prueba de buscador</p>
+</div>
+<div class="wrap"><div class="card">
+  <div id="loading" class="muted">Cargando biblioteca…</div>
+  <div id="panel" style="display:none">
+    <label for="search">Buscar ejercicio</label>
+    <div class="search-wrap">
+      <input id="search" placeholder="Ej.: Hack, remo, jalón…" autocomplete="off">
+      <div id="results" class="results"></div>
+    </div>
+    <div id="selected" class="selected">
+      <h2 id="name"></h2>
+      <div id="exerciseId" class="id"></div>
+      <div class="field"><b>Video</b><a id="video" class="video" target="_blank" rel="noopener noreferrer">▶ Ver video</a><span id="noVideo" class="muted"></span></div>
+      <div class="field"><b>Intención</b><span id="intent"></span></div>
+      <div class="field"><b>Sensación</b><span id="feel"></span></div>
+      <div class="field"><b>Error a evitar</b><span id="error"></span></div>
+    </div>
+  </div>
+</div></div>
+<script>
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=41200741&single=true&output=csv";
+let exercises = [];
+
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function parseCSV(text){
+  const lines=text.replace(/\r/g,'').split('\n').filter(Boolean);
+  const headers=lines[0].split(',').map(x=>x.trim());
+  return lines.slice(1).map(line=>{
+    const vals=[]; let cur='',q=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch=='"'){q=!q;}
+      else if(ch==','&&!q){vals.push(cur);cur='';}
+      else cur+=ch;
+    }
+    vals.push(cur);
+    const o={}; headers.forEach((h,i)=>o[h]=(vals[i]||'').trim());
+    return o;
+  });
+}
+function selectExercise(ex){
+  document.getElementById('search').value=ex.ejercicio;
+  document.getElementById('results').style.display='none';
+  document.getElementById('selected').style.display='block';
+  document.getElementById('name').textContent=ex.ejercicio||'';
+  document.getElementById('exerciseId').textContent='ID: '+(ex.id_ejercicio||'');
+  const v=document.getElementById('video'), nv=document.getElementById('noVideo');
+  if(ex.video_url){v.href=ex.video_url;v.style.display='inline-flex';nv.textContent='';}
+  else{v.style.display='none';nv.textContent='Sin video cargado';}
+  document.getElementById('intent').textContent=ex.intencion||'—';
+  document.getElementById('feel').textContent=ex.sensacion||'—';
+  document.getElementById('error').textContent=ex.error_evitar||'—';
+}
+function renderResults(items){
+  const box=document.getElementById('results'); box.innerHTML='';
+  if(!items.length){box.innerHTML='<div class="result muted">No encontré ejercicios.</div>';box.style.display='block';return;}
+  items.slice(0,8).forEach(ex=>{
+    const d=document.createElement('div'); d.className='result'; d.textContent=ex.ejercicio;
+    d.onclick=()=>selectExercise(ex); box.appendChild(d);
+  });
+  box.style.display='block';
+}
+document.getElementById('search').addEventListener('input',e=>{
+  const q=norm(e.target.value.trim());
+  if(!q){document.getElementById('results').style.display='none';return;}
+  renderResults(exercises.filter(ex=>norm(ex.ejercicio).includes(q)||norm(ex.id_ejercicio).includes(q)));
+});
+(async()=>{
+  try{
+    const r=await fetch(CSV_URL+'&t='+Date.now(),{cache:'no-store'});
+    exercises=parseCSV(await r.text()).filter(x=>x.ejercicio);
+    document.getElementById('loading').style.display='none';
+    document.getElementById('panel').style.display='block';
+  }catch(e){
+    document.getElementById('loading').textContent='Error al cargar la biblioteca.';
+  }
+})();
+</script>
+</body></html>
