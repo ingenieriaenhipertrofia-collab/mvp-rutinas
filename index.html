@@ -45,10 +45,6 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .video-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:12px;text-decoration:none;font-weight:700;border:1px solid #d7dbe0;background:#fff;color:#111}
 .video-btn.hidden{display:none}
 .keys-box{margin:12px 0 18px;border:1px solid #e1e4e8;border-radius:14px;overflow:hidden;background:#fff}
-.keys-box summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700;user-select:none}
-.keys-box summary::-webkit-details-marker{display:none}
-.keys-box summary::after{content:'＋';float:right;font-weight:600}
-.keys-box[open] summary::after{content:'−'}
 .keys-content{padding:0 16px 14px}
 .key-item{margin-top:10px;line-height:1.45}
 .key-item b{display:block;margin-bottom:2px}
@@ -69,7 +65,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
     <div id="app" class="hidden">
       <div class="topline">
         <div class="eyebrow">Día <span id="dia"></span></div>
-        <div class="progress" id="progress"></div><div id="buildVersion" style="font-size:11px;font-weight:700;margin-top:5px">PRUEBA v4</div>
+        <div class="progress" id="progress"></div>
       </div>
 
       <h2 id="ejercicio"></h2>
@@ -79,20 +75,22 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
         <div><b id="reps"></b><span>repeticiones</span></div>
         <div><b id="tempo"></b><span>tempo</span></div>
       </div>
-      <div id="diagData" style="font-size:11px;opacity:.65;margin-top:8px"></div>
+      
 
       <div class="video-wrap">
         <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
       </div>
 
-      <details id="keysBox" class="keys-box" style="display:none">
-        <summary>Claves de ejecución</summary>
-        <div class="keys-content">
+      <div id="keysBox" class="keys-box" style="display:none">
+        <button id="keysToggle" type="button" style="width:100%;border:0;background:#fff;padding:14px 16px;font-weight:700;text-align:left;cursor:pointer">
+          Claves de ejecución <span id="keysSign" style="float:right">＋</span>
+        </button>
+        <div id="keysContent" class="keys-content" style="display:none">
           <div id="intencionWrap" class="key-item" style="display:none"><b>Intención</b><span id="intencion"></span></div>
           <div id="sensacionWrap" class="key-item" style="display:none"><b>Sensación</b><span id="sensacion"></span></div>
           <div id="errorWrap" class="key-item" style="display:none"><b>Error a evitar</b><span id="errorEvitar"></span></div>
         </div>
-      </details>
+      </div>
 
       <div id="lastBox" class="last-box">
         <div class="last-title">Último registro</div>
@@ -241,11 +239,6 @@ function render(){
 
   const videoBtn=document.getElementById('videoBtn');
   const videoUrl=String(r.video_url||'').trim();
-  const diag=document.getElementById('diagData');
-  if(diag){
-    const keyCount=[r.intencion,r.sensacion,r.error_evitar].filter(v=>String(v||'').trim()!=='').length;
-    diag.textContent=`Datos CSV: video ${videoUrl?'✓':'✗'} · claves ${keyCount}/3`;
-  }
   if(videoUrl){
     videoBtn.href=videoUrl;
     videoBtn.style.display='inline-flex';
@@ -274,7 +267,10 @@ function render(){
       wrap.style.display='none';
     }
   });
-  keysBox.open=false;
+  const keysContent=document.getElementById('keysContent');
+  const keysSign=document.getElementById('keysSign');
+  keysContent.style.display='none';
+  keysSign.textContent='＋';
   keysBox.style.display=hasKeys ? 'block' : 'none';
 
   renderLast(r);
@@ -366,6 +362,14 @@ function sendCurrent(){
   document.getElementById('sendForm').submit();
   return true;
 }
+
+document.getElementById('keysToggle').addEventListener('click',()=>{
+  const content=document.getElementById('keysContent');
+  const sign=document.getElementById('keysSign');
+  const opening=content.style.display==='none' || content.style.display==='';
+  content.style.display=opening ? 'block' : 'none';
+  sign.textContent=opening ? '−' : '＋';
+});
 
 document.getElementById('prevBtn').addEventListener('click',()=>{
   saveCurrent();
