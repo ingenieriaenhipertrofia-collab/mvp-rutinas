@@ -39,7 +39,16 @@ button.secondary{border:1px solid var(--line);background:#fff;color:var(--ink);b
 button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;padding:14px;font-size:15px;font-weight:700}
 .status{min-height:20px;margin-top:10px;text-align:center;color:var(--ok);font-weight:700}
 .hidden{display:none!important}
+
 .loading{color:var(--muted)}
+.day-selector{text-align:center}
+.day-selector h2{margin:4px 0 8px}
+.day-selector p{margin:0 0 18px;color:var(--muted)}
+.day-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.day-btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:18px 12px;font-size:16px;font-weight:800;cursor:pointer}
+.day-btn:hover{background:#f7f7f7}
+.back-days{border:0;background:transparent;padding:0;color:var(--muted);font-weight:700;cursor:pointer;margin-bottom:8px}
+
 
 .video-wrap{margin:14px 0 4px}
 .video-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:12px;text-decoration:none;font-weight:700;border:1px solid #d7dbe0;background:#fff;color:#111}
@@ -62,7 +71,15 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
   <div class="card">
     <div id="loading" class="loading">Cargando rutina…</div>
 
+    <div id="daySelector" class="day-selector hidden">
+      <div class="eyebrow">Rutina</div>
+      <h2>Elegí el día</h2>
+      <p>Seleccioná el entrenamiento que vas a realizar.</p>
+      <div id="dayButtons" class="day-grid"></div>
+    </div>
+
     <div id="app" class="hidden">
+      <button id="backToDaysBtn" class="back-days" type="button">← Elegir otro día</button>
       <div class="topline">
         <div class="eyebrow">Día <span id="dia"></span></div>
         <div class="progress" id="progress"></div>
@@ -130,7 +147,10 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
       <div class="eyebrow">Entrenamiento</div>
       <h2>✓ Día completado</h2>
       <p>Los registros fueron enviados.</p>
-      <button id="reviewBtn" class="secondary" type="button">Revisar entrenamiento</button>
+      <div class="actions">
+        <button id="reviewBtn" class="secondary" type="button">Revisar entrenamiento</button>
+        <button id="doneDaysBtn" class="primary" type="button">Elegir otro día</button>
+      </div>
     </div>
   </div>
 </div>
@@ -139,6 +159,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMHhQr9bZmTQkw67Aj7v5mRXRIC-T3tUfkO8sxtBgcYcXBid-mEV31OaBbUagrK8csm32ON9a0rVuX/pub?gid=339469399&single=true&output=csv';
 const EXERCISES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=41200741&single=true&output=csv';
 const LAST_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFcFqAzKtXE84pCJint6E2yeH9yFAYlFIVMgIA77Tcdvdy2O1og4qe-T-RgZqiFRS8UX1Fn0Y35TlU/pub?gid=1347015392&single=true&output=csv';
+let allRows = [];
 let rows = [];
 let lastRows = [];
 let exerciseLibrary = [];
@@ -154,7 +175,7 @@ function localDateKey(){
 }
 
 function storageKey(){
-  return `mvpRutinaState:v3:${localDateKey()}`;
+  return `mvpRutinaState:v4:${localDateKey()}`;
 }
 
 function stripBom(s){return s.replace(/^\uFEFF/,'')}
@@ -247,6 +268,56 @@ function enrichRoutineRows(routineRows, libraryRows){
       error_evitar: lib.error_evitar || ''
     };
   });
+}
+
+
+function availableDays(){
+  const seen=new Set(), days=[];
+  allRows.forEach(r=>{
+    const d=String(r.dia||'').trim();
+    if(d && !seen.has(d)){ seen.add(d); days.push(d); }
+  });
+  return days;
+}
+
+function showDaySelector(){
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('done').classList.add('hidden');
+  const selector=document.getElementById('daySelector');
+  const box=document.getElementById('dayButtons');
+  box.innerHTML='';
+
+  availableDays().forEach(day=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='day-btn';
+    btn.textContent='Día '+day;
+    btn.addEventListener('click',()=>startDay(day));
+    box.appendChild(btn);
+  });
+
+  selector.classList.remove('hidden');
+}
+
+function startDay(day){
+  saveCurrentSafe();
+  rows=allRows
+    .filter(r=>String(r.dia||'').trim()===String(day).trim())
+    .sort((a,b)=>(Number(a.orden)||0)-(Number(b.orden)||0));
+
+  if(!rows.length) return;
+  current=0;
+  document.getElementById('daySelector').classList.add('hidden');
+  document.getElementById('done').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  render();
+}
+
+function saveCurrentSafe(){
+  if(!rows.length) return;
+  const box=document.getElementById('seriesBox');
+  if(!box || document.getElementById('app').classList.contains('hidden')) return;
+  saveCurrent();
 }
 
 function render(){
@@ -414,6 +485,15 @@ document.getElementById('reviewBtn').addEventListener('click',()=>{
   current=0; render();
 });
 
+document.getElementById('backToDaysBtn').addEventListener('click',()=>{
+  saveCurrentSafe();
+  showDaySelector();
+});
+
+document.getElementById('doneDaysBtn').addEventListener('click',()=>{
+  showDaySelector();
+});
+
 (async()=>{
   try{
     loadStored();
@@ -431,7 +511,7 @@ document.getElementById('reviewBtn').addEventListener('click',()=>{
     const urlToken=(params.get('token')||'lara-test').trim();
 
     exerciseLibrary=parseCsv(libText);
-    rows=enrichRoutineRows(
+    allRows=enrichRoutineRows(
       parseCsv(text)
         .filter(r=>r.ejercicio && r.dia && String(r.token||'').trim()===urlToken),
       exerciseLibrary
@@ -439,10 +519,9 @@ document.getElementById('reviewBtn').addEventListener('click',()=>{
       .sort((a,b)=>(a.dia||'').localeCompare(b.dia||'') || (Number(a.orden)||0)-(Number(b.orden)||0));
 
     lastRows=parseCsv(lastText);
-    if(!rows.length) throw new Error('No hay una rutina vigente para este token.');
+    if(!allRows.length) throw new Error('No hay una rutina vigente para este token.');
     document.getElementById('loading').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    render();
+    showDaySelector();
   }catch(e){
     document.getElementById('loading').textContent='Error al cargar la rutina: '+e.message;
   }
