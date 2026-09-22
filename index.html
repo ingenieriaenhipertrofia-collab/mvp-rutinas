@@ -69,7 +69,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
     <div id="app" class="hidden">
       <div class="topline">
         <div class="eyebrow">Día <span id="dia"></span></div>
-        <div class="progress" id="progress"></div>
+        <div class="progress" id="progress"></div><div id="buildVersion" style="font-size:10px;opacity:.45;margin-top:4px">v-video-3</div>
       </div>
 
       <h2 id="ejercicio"></h2>
@@ -81,10 +81,10 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
       </div>
 
       <div class="video-wrap">
-        <a id="videoBtn" class="video-btn hidden" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
+        <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
       </div>
 
-      <details id="keysBox" class="keys-box hidden">
+      <details id="keysBox" class="keys-box" style="display:none">
         <summary>Claves de ejecución</summary>
         <div class="keys-content">
           <div id="intencionWrap" class="key-item hidden"><b>Intención</b><span id="intencion"></span></div>
@@ -242,10 +242,10 @@ function render(){
   const videoUrl=String(r.video_url||'').trim();
   if(videoUrl){
     videoBtn.href=videoUrl;
-    videoBtn.classList.remove('hidden');
+    videoBtn.style.display='inline-flex';
   }else{
     videoBtn.href='#';
-    videoBtn.classList.add('hidden');
+    videoBtn.style.display='none';
   }
 
   const keysBox=document.getElementById('keysBox');
@@ -261,15 +261,15 @@ function render(){
     const clean=String(value||'').trim();
     if(clean){
       target.textContent=clean;
-      wrap.classList.remove('hidden');
+      wrap.style.display='block';
       hasKeys=true;
     }else{
       target.textContent='';
-      wrap.classList.add('hidden');
+      wrap.style.display='none';
     }
   });
   keysBox.open=false;
-  keysBox.classList.toggle('hidden',!hasKeys);
+  keysBox.style.display=hasKeys ? 'block' : 'none';
 
   renderLast(r);
 
