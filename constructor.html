@@ -353,6 +353,12 @@ document.getElementById('saveStudentBtn').addEventListener('click',()=>{
   document.getElementById('createdStudentLink').textContent=link;
   document.getElementById('createdStudentBox').style.display='block';
   document.getElementById('saveStudentBtn').disabled=true;
+
+  // Volver automáticamente al panel luego de guardar,
+  // manteniendo seleccionada la alumna recién creada.
+  setTimeout(()=>{
+    closeStudentModal();
+  },500);
 });
 document.getElementById('copyStudentLinkBtn').addEventListener('click',async()=>{
   const link=document.getElementById('createdStudentLink').textContent;
