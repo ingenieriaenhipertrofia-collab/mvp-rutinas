@@ -192,13 +192,6 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
   </div>
 </div>
 
-<form id="stateForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfB9K2cnhlYWSqqzaLZOpeE_reyp0ZuUr0kvmzb7kDOfKrXlg/formResponse" method="POST" target="state_iframe" style="display:none">
-  <input type="hidden" name="entry.1955490611" id="stToken">
-  <input type="hidden" name="entry.1193693172" id="stAction">
-  <input type="hidden" name="entry.279390491" id="stActive">
-</form>
-<iframe name="state_iframe" style="display:none"></iframe>
-
 <div id="studentModal" class="modal-backdrop" aria-hidden="true">
   <div class="modal">
     <div class="modal-head">
@@ -457,11 +450,20 @@ function allKnownStudents(){
   students.forEach(s=>{ const t=String(s.token||'').trim(); if(t) byToken.set(t,s); });
   return [...byToken.values()];
 }
-function submitStudentState(token,action,active){
-  document.getElementById('stToken').value=token;
-  document.getElementById('stAction').value=action;
-  document.getElementById('stActive').value=active?'TRUE':'FALSE';
-  document.getElementById('stateForm').submit();
+async function submitStudentState(token,action,active){
+  const endpoint='https://docs.google.com/forms/d/e/1FAIpQLSfB9K2cnhlYWSqqzaLZOpeE_reyp0ZuUr0kvmzb7kDOfKrXlg/formResponse';
+  const body=new URLSearchParams();
+  body.append('entry.1955490611',token);
+  body.append('entry.1193693172',action);
+  body.append('entry.279390491',active?'TRUE':'FALSE');
+
+  await fetch(endpoint,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:body.toString()
+  });
+
   studentStates.push({token,accion:action,activo:active?'TRUE':'FALSE'});
 }
 function openModalById(id){ const m=document.getElementById(id); m.classList.add('show'); m.setAttribute('aria-hidden','false'); }
@@ -492,23 +494,25 @@ document.getElementById('inactiveStudentsBtn').addEventListener('click',()=>{
   closeModalById('managementModal'); renderInactiveList(); openModalById('inactiveModal');
 });
 
-document.getElementById('deactivateStudentBtn').addEventListener('click',()=>{
+document.getElementById('deactivateStudentBtn').addEventListener('click',async()=>{
   const select=document.getElementById('student');
   const token=select.value;
   const name=select.options[select.selectedIndex]?.textContent||'esta alumna';
   if(!token){ alert('Seleccioná una alumna primero.'); return; }
   if(!confirm('¿Dar de baja a '+name+'? Su historial y rutinas se conservarán.')) return;
-  submitStudentState(token,'BAJA',false);
+  await submitStudentState(token,'BAJA',false);
+  alert('Alumna dada de baja correctamente.');
   populateStudents('');
   closeModalById('managementModal');
   if(document.getElementById('student').value) loadCurrentRoutinesForStudent();
   else { routines={A:[],B:[],C:[]}; renderRoutine(); }
 });
 
-document.getElementById('reactivateStudentBtn').addEventListener('click',()=>{
+document.getElementById('reactivateStudentBtn').addEventListener('click',async()=>{
   const token=document.getElementById('reactivateStudentBtn').dataset.token;
   if(!token) return;
-  submitStudentState(token,'REACTIVACION',true);
+  await submitStudentState(token,'REACTIVACION',true);
+  alert('Alumna reactivada correctamente.');
   populateStudents(token);
   renderInactiveList();
   loadCurrentRoutinesForStudent();
