@@ -213,10 +213,21 @@ function splitLine(line){
   }
   out.push(cur);return out;
 }
+function normalizeHeader(h){
+  return String(h||'')
+    .replace(/^\uFEFF/,'')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'_')
+    .replace(/^_+|_+$/g,'');
+}
+
 function parseCSV(text){
   const lines=text.replace(/\r/g,'').split('\n').filter(x=>x.trim()!=='');
   if(!lines.length) return [];
-  const headers=splitLine(lines[0]).map(x=>x.trim());
+  const headers=splitLine(lines[0]).map(normalizeHeader);
   return lines.slice(1).map(line=>{
     const vals=splitLine(line), o={};
     headers.forEach((h,i)=>o[h]=(vals[i]||'').trim());
@@ -580,10 +591,12 @@ document.getElementById('saveDayBtn').addEventListener('click', async ()=>{
 
     exercises=parseCSV(await exRes.text()).filter(x=>x.ejercicio);
     currentRows=parseCSV(await currentRes.text()).filter(x=>x.token && x.dia && x.ejercicio);
-    students=[
-      ...parseCSV(await studentsRes.text()),
-      ...parseCSV(await newStudentsRes.text())
-    ];
+    const baseStudents=parseCSV(await studentsRes.text());
+    const createdStudents=parseCSV(await newStudentsRes.text()).map(s=>({
+      ...s,
+      activo: String(s.activo||'').trim() || 'TRUE'
+    }));
+    students=[...baseStudents,...createdStudents];
 
     populateStudents();
 
