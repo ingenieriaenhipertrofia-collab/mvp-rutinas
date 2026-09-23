@@ -85,7 +85,7 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
       <div>
         <label>Día</label>
         <select id="day">
-          <option>A</option><option selected>B</option><option>C</option>
+          <option>A</option><option selected>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
         </select>
       </div>
     </div>
@@ -236,7 +236,7 @@ const CURRENT_ROUTINES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 const STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=1888921254&single=true&output=csv";
 const NEW_STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYAKol1CySnuHwPDVktKld_padRKy9F_ZYYogyDCkOz7hZkBFKCnxiYnej01QsUPPuhKjejEWWEQ/pub?gid=1004033237&single=true&output=csv";
 const STUDENT_STATE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7BPBIklMyjNK_GcJ1K0slb_JW0fkU7B82AutWkglCb8d5UmiKDaiW4urPmtCxGTXANdIB0Z21l1kO/pub?gid=1659100872&single=true&output=csv";
-let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[]}, editingIndex=null;
+let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]}, editingIndex=null;
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function splitLine(line){
@@ -505,7 +505,7 @@ document.getElementById('deactivateStudentBtn').addEventListener('click',async()
   populateStudents('');
   closeModalById('managementModal');
   if(document.getElementById('student').value) loadCurrentRoutinesForStudent();
-  else { routines={A:[],B:[],C:[]}; renderRoutine(); }
+  else { routines={A:[],B:[],C:[],D:[],E:[],F:[]}; renderRoutine(); }
 });
 
 document.getElementById('reactivateStudentBtn').addEventListener('click',async()=>{
@@ -517,7 +517,11 @@ document.getElementById('reactivateStudentBtn').addEventListener('click',async()
   renderInactiveList();
   loadCurrentRoutinesForStudent();
 });
-function currentDay(){ return document.getElementById('day').value; }
+function currentDay(){
+  const d=document.getElementById('day').value;
+  if(!routines[d]) routines[d]=[];
+  return d;
+}
 function loadCurrentRoutinesForStudent(){
   const token=document.getElementById('student').value;
   const fresh={A:[],B:[],C:[]};
