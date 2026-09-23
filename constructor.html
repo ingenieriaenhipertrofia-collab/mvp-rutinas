@@ -42,6 +42,17 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
 .danger-text{color:#991b1b;font-weight:700}
 .day-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px}
 .badge{font-size:12px;background:#eef0f3;border-radius:999px;padding:5px 9px;color:#4b5563}
+.new-student-row{display:flex;justify-content:flex-end;margin-top:10px}
+.link-button{background:transparent;color:#111827;border:1px solid #cfd4dc}
+.modal-backdrop{position:fixed;inset:0;background:rgba(17,24,39,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal-backdrop.show{display:flex}
+.modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.25)}
+.modal-head{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:16px}
+.modal-head h2{margin:0}
+.icon-btn{background:#eef0f3;color:#111827;padding:8px 11px}
+.full{grid-column:1/-1}
+.created-box{margin-top:16px;padding:14px;border-radius:12px;background:#f3f4f6;display:none}
+.created-link{word-break:break-all;font-size:13px;margin:7px 0 11px}
 .editing{outline:2px solid #111827;outline-offset:2px}
 
 </style>
@@ -60,6 +71,9 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
         <select id="student">
           <option value="">Cargando alumnas…</option>
         </select>
+        <div class="new-student-row">
+          <button id="newStudentBtn" class="link-button" type="button">＋ Nueva alumna</button>
+        </div>
       </div>
       <div>
         <label>Día</label>
@@ -140,10 +154,50 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
   <iframe name="save_iframe" style="display:none"></iframe>
 </div>
 
+
+<div id="studentModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-head">
+      <div><div class="small">Alta desde el panel</div><h2>Nueva alumna</h2></div>
+      <button id="closeStudentModal" class="icon-btn" type="button">✕</button>
+    </div>
+    <div class="grid">
+      <div><label>Nombre *</label><input id="nsNombre" placeholder="Ej.: Sabrina Gómez"></div>
+      <div><label>Fecha de inicio</label><input id="nsFecha" type="date"></div>
+      <div class="full"><label>Objetivo principal</label><input id="nsObjetivo" placeholder="Ej.: Hipertrofia y recomposición corporal"></div>
+      <div><label>Frecuencia / estructura</label><input id="nsFrecuencia" placeholder="Ej.: 3 días/semana"></div>
+      <div><label>Email</label><input id="nsEmail" type="email" placeholder="Opcional"></div>
+    </div>
+    <div class="actions">
+      <button id="cancelStudentBtn" class="secondary" type="button">Cancelar</button>
+      <button id="saveStudentBtn" class="primary" type="button">Guardar alumna</button>
+    </div>
+    <div id="createdStudentBox" class="created-box">
+      <b>✓ Alumna creada</b>
+      <div id="createdStudentMeta" class="small" style="margin-top:5px"></div>
+      <div id="createdStudentLink" class="created-link"></div>
+      <button id="copyStudentLinkBtn" class="secondary" type="button">Copiar enlace</button>
+    </div>
+  </div>
+</div>
+
+<form id="studentForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfj2bSrrtbk7f26DxtQu9AZielrVumjU_6Wq6SIEL9QoEWd2g/formResponse" method="POST" target="student_iframe" style="display:none">
+  <input type="hidden" name="entry.3406358" id="afAlumnaId">
+  <input type="hidden" name="entry.1054094851" id="afNombre">
+  <input type="hidden" name="entry.26884833" id="afObjetivo">
+  <input type="hidden" name="entry.435061558" id="afFecha">
+  <input type="hidden" name="entry.796823982" id="afFrecuencia">
+  <input type="hidden" name="entry.1087282600" id="afEmail">
+  <input type="hidden" name="entry.1750407016" id="afToken">
+  <input type="hidden" name="entry.249303003" id="afActivo">
+</form>
+<iframe name="student_iframe" style="display:none"></iframe>
+
 <script>
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=41200741&single=true&output=csv";
 const CURRENT_ROUTINES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMHhQr9bZmTQkw67Aj7v5mRXRIC-T3tUfkO8sxtBgcYcXBid-mEV31OaBbUagrK8csm32ON9a0rVuX/pub?gid=339469399&single=true&output=csv";
 const STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=1888921254&single=true&output=csv";
+const NEW_STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYAKol1CySnuHwPDVktKld_padRKy9F_ZYYogyDCkOz7hZkBFKCnxiYnej01QsUPPuhKjejEWWEQ/pub?gid=1004033237&single=true&output=csv";
 let exercises=[], currentRows=[], students=[], selected=null, routines={A:[],B:[],C:[]}, editingIndex=null;
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
@@ -199,21 +253,20 @@ function isActiveValue(v){
   return ['true','verdadero','1','si','sí','yes'].includes(s);
 }
 
-function populateStudents(){
+function populateStudents(preferredToken=''){
   const select=document.getElementById('student');
+  const previous=preferredToken || select.value;
   select.innerHTML='';
-
-  const active=students.filter(s=>s.nombre && s.token && isActiveValue(s.activo));
+  const byToken=new Map();
+  students.filter(s=>s.nombre && s.token && isActiveValue(s.activo))
+    .forEach(s=>byToken.set(String(s.token).trim(),s));
+  const active=[...byToken.values()];
   if(!active.length){
     const opt=document.createElement('option');
-    opt.value='';
-    opt.textContent='No hay alumnas activas';
-    select.appendChild(opt);
-    return;
+    opt.value=''; opt.textContent='No hay alumnas activas';
+    select.appendChild(opt); return;
   }
-
-  active
-    .sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es',{sensitivity:'base'}))
+  active.sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es',{sensitivity:'base'}))
     .forEach(s=>{
       const opt=document.createElement('option');
       opt.value=String(s.token).trim();
@@ -221,7 +274,83 @@ function populateStudents(){
       opt.dataset.alumnaId=s.alumna_id||'';
       select.appendChild(opt);
     });
+  if(previous && [...select.options].some(o=>o.value===previous)) select.value=previous;
 }
+
+
+function slugifyName(name){
+  return String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,24) || 'alumna';
+}
+function shortCode(){
+  const chars='abcdefghjkmnpqrstuvwxyz23456789';
+  let out='';
+  if(window.crypto && crypto.getRandomValues){
+    const arr=new Uint32Array(6); crypto.getRandomValues(arr);
+    for(const n of arr) out+=chars[n%chars.length];
+  }else{
+    for(let i=0;i<6;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+  }
+  return out;
+}
+function generateStudentIdentity(name){
+  return {token:slugifyName(name)+'-'+shortCode(), alumnaId:'ALU-'+Date.now().toString().slice(-7)};
+}
+function resetStudentModal(){
+  ['nsNombre','nsObjetivo','nsFecha','nsFrecuencia','nsEmail'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('createdStudentBox').style.display='none';
+  document.getElementById('saveStudentBtn').disabled=false;
+}
+function openStudentModal(){
+  resetStudentModal();
+  const m=document.getElementById('studentModal'); m.classList.add('show'); m.setAttribute('aria-hidden','false');
+  setTimeout(()=>document.getElementById('nsNombre').focus(),50);
+}
+function closeStudentModal(){
+  const m=document.getElementById('studentModal'); m.classList.remove('show'); m.setAttribute('aria-hidden','true');
+}
+document.getElementById('newStudentBtn').addEventListener('click',openStudentModal);
+document.getElementById('closeStudentModal').addEventListener('click',closeStudentModal);
+document.getElementById('cancelStudentBtn').addEventListener('click',closeStudentModal);
+document.getElementById('studentModal').addEventListener('click',e=>{if(e.target===document.getElementById('studentModal')) closeStudentModal();});
+
+document.getElementById('saveStudentBtn').addEventListener('click',()=>{
+  const nombre=document.getElementById('nsNombre').value.trim();
+  if(!nombre){ alert('Ingresá el nombre de la alumna.'); return; }
+  const objetivo=document.getElementById('nsObjetivo').value.trim();
+  const fecha=document.getElementById('nsFecha').value;
+  const frecuencia=document.getElementById('nsFrecuencia').value.trim();
+  const email=document.getElementById('nsEmail').value.trim();
+  const {token,alumnaId}=generateStudentIdentity(nombre);
+
+  document.getElementById('afAlumnaId').value=alumnaId;
+  document.getElementById('afNombre').value=nombre;
+  document.getElementById('afObjetivo').value=objetivo;
+  document.getElementById('afFecha').value=fecha;
+  document.getElementById('afFrecuencia').value=frecuencia;
+  document.getElementById('afEmail').value=email;
+  document.getElementById('afToken').value=token;
+  document.getElementById('afActivo').value='TRUE';
+  document.getElementById('studentForm').submit();
+
+  students.push({alumna_id:alumnaId,nombre,objetivo_principal:objetivo,fecha_inicio:fecha,frecuencia_estructura:frecuencia,email,token,activo:'TRUE'});
+  populateStudents(token);
+  loadCurrentRoutinesForStudent();
+
+  const link='https://ingenieriaenhipertrofia-collab.github.io/mvp-rutinas/?token='+encodeURIComponent(token);
+  document.getElementById('createdStudentMeta').textContent='ID: '+alumnaId+' · Token: '+token;
+  document.getElementById('createdStudentLink').textContent=link;
+  document.getElementById('createdStudentBox').style.display='block';
+  document.getElementById('saveStudentBtn').disabled=true;
+});
+document.getElementById('copyStudentLinkBtn').addEventListener('click',async()=>{
+  const link=document.getElementById('createdStudentLink').textContent;
+  try{
+    await navigator.clipboard.writeText(link);
+    const b=document.getElementById('copyStudentLinkBtn'); b.textContent='✓ Copiado';
+    setTimeout(()=>b.textContent='Copiar enlace',1500);
+  }catch(e){ prompt('Copiá este enlace:',link); }
+});
 
 function currentDay(){ return document.getElementById('day').value; }
 function loadCurrentRoutinesForStudent(){
@@ -442,15 +571,19 @@ document.getElementById('saveDayBtn').addEventListener('click', async ()=>{
 (async()=>{
   try{
     const bust='&t='+Date.now();
-    const [exRes, currentRes, studentsRes]=await Promise.all([
+    const [exRes, currentRes, studentsRes, newStudentsRes]=await Promise.all([
       fetch(CSV_URL+bust,{cache:'no-store'}),
       fetch(CURRENT_ROUTINES_CSV+bust,{cache:'no-store'}),
-      fetch(STUDENTS_CSV+bust,{cache:'no-store'})
+      fetch(STUDENTS_CSV+bust,{cache:'no-store'}),
+      fetch(NEW_STUDENTS_CSV+bust,{cache:'no-store'})
     ]);
 
     exercises=parseCSV(await exRes.text()).filter(x=>x.ejercicio);
     currentRows=parseCSV(await currentRes.text()).filter(x=>x.token && x.dia && x.ejercicio);
-    students=parseCSV(await studentsRes.text());
+    students=[
+      ...parseCSV(await studentsRes.text()),
+      ...parseCSV(await newStudentsRes.text())
+    ];
 
     populateStudents();
 
