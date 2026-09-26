@@ -53,6 +53,9 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .video-wrap{margin:14px 0 4px}
 .video-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:12px;text-decoration:none;font-weight:700;border:1px solid #d7dbe0;background:#fff;color:#111}
 .video-btn.hidden{display:none}
+.trainer-note{display:none;margin:12px 0 16px;padding:13px 14px;border-radius:10px;background:#fff8e7;border:1px solid #ead8a0;border-left:4px solid var(--gold)}
+.trainer-note-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#7a651d;margin-bottom:5px}
+.trainer-note-text{line-height:1.45;white-space:pre-wrap}
 .keys-box{margin:12px 0 18px;border:1px solid #e1e4e8;border-radius:14px;overflow:hidden;background:#fff}
 .keys-content{padding:0 16px 14px}
 .key-item{margin-top:10px;line-height:1.45}
@@ -96,6 +99,11 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 
       <div class="video-wrap">
         <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
+      </div>
+
+      <div id="trainerNoteBox" class="trainer-note">
+        <div class="trainer-note-title">Nota del entrenador</div>
+        <div id="trainerNoteText" class="trainer-note-text"></div>
       </div>
 
       <div id="keysBox" class="keys-box" style="display:none">
@@ -338,6 +346,11 @@ function render(){
     videoBtn.href='#';
     videoBtn.style.display='none';
   }
+
+  const trainerNote=String(r.nota_entrenador||'').trim();
+  const trainerNoteBox=document.getElementById('trainerNoteBox');
+  document.getElementById('trainerNoteText').textContent=trainerNote;
+  trainerNoteBox.style.display=trainerNote ? 'block' : 'none';
 
   const keysBox=document.getElementById('keysBox');
   const fields=[
