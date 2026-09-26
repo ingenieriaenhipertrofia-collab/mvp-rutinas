@@ -15,7 +15,8 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-ser
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}}
 label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
-input,select{width:100%;padding:12px 13px;border:1px solid #cfd4dc;border-radius:10px;font-size:15px;background:#fff}
+input,select,textarea{width:100%;padding:12px 13px;border:1px solid #cfd4dc;border-radius:10px;font-size:15px;background:#fff;font:inherit}
+textarea{min-height:88px;resize:vertical}
 .search-wrap{position:relative}
 .results{position:absolute;z-index:10;left:0;right:0;top:49px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.12);display:none;overflow:hidden}
 .result{padding:11px 13px;border-bottom:1px solid var(--line);cursor:pointer}.result:last-child{border-bottom:0}.result:hover{background:var(--soft)}
@@ -122,6 +123,12 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
       </div>
     </div>
 
+    <div style="margin-top:14px">
+      <label>Indicaciones para la alumna</label>
+      <textarea id="trainerNote" placeholder="Ej.: Última serie cerca del fallo. Si completás 12 reps en todas, subimos carga."></textarea>
+      <div class="small" style="margin-top:6px">Opcional · esta nota es específica para esta alumna y este ejercicio.</div>
+    </div>
+
     <div class="actions">
       <button id="cancelEditBtn" class="secondary" type="button" style="display:none">Cancelar edición</button>
       <button id="addBtn" class="primary" type="button">Agregar ejercicio</button>
@@ -157,6 +164,7 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
     <input type="hidden" name="entry.2046005905" id="sfReps">
     <input type="hidden" name="entry.2087582087" id="sfTempo">
     <input type="hidden" name="entry.465891400" id="sfCargaInicial">
+    <input type="hidden" name="entry.677500509" id="sfNotaEntrenador">
   </form>
   <iframe name="save_iframe" style="display:none"></iframe>
 </div>
@@ -542,7 +550,8 @@ function loadCurrentRoutinesForStudent(){
         series:r.series||'3',
         reps:r.reps||'',
         tempo:r.tempo||'',
-        load:r.carga_inicial||''
+        load:r.carga_inicial||'',
+        nota_entrenador:r.nota_entrenador||''
       });
     });
 
@@ -561,6 +570,7 @@ function clearForm(){
   document.getElementById('reps').value='';
   document.getElementById('tempo').value='';
   document.getElementById('load').value='';
+  document.getElementById('trainerNote').value='';
   document.getElementById('addBtn').textContent='Agregar ejercicio';
   document.getElementById('cancelEditBtn').style.display='none';
 }
@@ -577,6 +587,7 @@ function startEdit(i){
   document.getElementById('reps').value=r.reps||'';
   document.getElementById('tempo').value=r.tempo||'';
   document.getElementById('load').value=r.load||'';
+  document.getElementById('trainerNote').value=r.nota_entrenador||'';
   document.getElementById('addBtn').textContent='Guardar cambios';
   document.getElementById('cancelEditBtn').style.display='inline-block';
   window.scrollTo({top:0,behavior:'smooth'});
@@ -610,7 +621,7 @@ function renderRoutine(){
   routine.forEach((r,i)=>{
     const item=document.createElement('div');item.className='item';
     const left=document.createElement('div');left.className='item-left';
-    left.innerHTML='<div class="order">'+(i+1)+'</div><div class="item-main"><div class="item-title">'+r.ejercicio+'</div><div class="item-sub">'+r.series+' series · '+(r.reps||'—')+' reps · tempo '+(r.tempo||'—')+(r.load?' · '+r.load:'')+'</div></div>';
+    left.innerHTML='<div class="order">'+(i+1)+'</div><div class="item-main"><div class="item-title">'+r.ejercicio+'</div><div class="item-sub">'+r.series+' series · '+(r.reps||'—')+' reps · tempo '+(r.tempo||'—')+(r.load?' · '+r.load:'')+'</div>'+(r.nota_entrenador?'<div class="small" style="margin-top:5px">📝 '+r.nota_entrenador+'</div>':'')+'</div>';
 
     const actions=document.createElement('div');
     actions.className='item-actions';
@@ -656,7 +667,8 @@ document.getElementById('addBtn').onclick=()=>{
     series:document.getElementById('series').value||'3',
     reps:document.getElementById('reps').value.trim(),
     tempo:document.getElementById('tempo').value.trim(),
-    load:document.getElementById('load').value.trim()
+    load:document.getElementById('load').value.trim(),
+    nota_entrenador:document.getElementById('trainerNote').value.trim()
   };
   const day=currentDay();
   if(editingIndex===null){
@@ -701,6 +713,7 @@ async function submitRoutineRow(row, token, day, versionId, order){
   document.getElementById('sfReps').value=row.reps||'';
   document.getElementById('sfTempo').value=row.tempo||'';
   document.getElementById('sfCargaInicial').value=row.load||'';
+  document.getElementById('sfNotaEntrenador').value=row.nota_entrenador||'';
   document.getElementById('saveForm').submit();
   await sleep(450);
 }
