@@ -145,6 +145,7 @@ button:disabled{cursor:not-allowed;opacity:1}
     <div class="week-header">
       <div>
         <h2 class="week-title">Rutina actual</h2>
+        <div id="studentObjective" class="week-summary" style="margin-top:4px"></div>
         <div id="weekSummary" class="week-summary">Cargando rutina…</div>
       </div>
     </div>
@@ -158,59 +159,70 @@ button:disabled{cursor:not-allowed;opacity:1}
 
   <div id="editorPanel" class="inline-editor" style="display:none">
     <div class="editor-toolbar">
-      <div><div class="small" style="font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#69717c">Editor</div><h3 id="editorTitle">Agregar</h3></div>
+      <div>
+        <div class="small" style="font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#69717c">Editor</div>
+        <h3 id="editorTitle">Agregar</h3>
+      </div>
       <button id="closeEditorBtn" class="icon-btn" type="button">✕</button>
     </div>
 
-    <label>Tipo</label>
-    <div class="block-type-row">
-      <button id="individualTypeBtn" class="type-btn active" type="button">Ejercicio individual</button>
-      <button id="combinedTypeBtn" class="type-btn" type="button">Superserie</button>
-    </div>
-
-    <div class="grid">
-      <div>
-        <label id="seriesLabel">Series</label>
-        <input id="series" type="number" min="1" max="10" value="3">
-      </div>
-      <div>
-        <label>Indicaciones para la alumna</label>
-        <textarea id="trainerNote" placeholder="Ej.: Sin descanso entre ejercicios. Descansá 90 s al terminar cada vuelta."></textarea>
+    <div id="typeSection">
+      <label>Tipo</label>
+      <div class="block-type-row">
+        <button id="individualTypeBtn" class="type-btn active" type="button">Ejercicio individual</button>
+        <button id="combinedTypeBtn" class="type-btn" type="button">Superserie</button>
       </div>
     </div>
-    <div class="small" id="noteHelp" style="margin-top:6px">Opcional.</div>
 
-    <div class="builder-head">
-      <div>
-        <b id="exerciseBuilderTitle">Ejercicio</b>
-        <div class="small">Seleccioná un ejercicio de la biblioteca.</div>
-      </div>
-      <span id="draftCount" class="badge" style="display:none">0 / 5</span>
+    <div id="lockedExerciseBox" style="display:none;margin:4px 0 16px">
+      <div class="small" style="font-weight:700;text-transform:uppercase;letter-spacing:.35px">Ejercicio</div>
+      <div id="lockedExerciseName" style="font-size:20px;font-weight:800;margin-top:3px"></div>
     </div>
 
-    <label>Buscar ejercicio</label>
-    <div class="search-wrap">
-      <input id="search" placeholder="Ej.: Hack, remo, jalón…" autocomplete="off">
-      <div id="results" class="results"></div>
+    <div id="exerciseSelectSection">
+      <div class="builder-head">
+        <div>
+          <b id="exerciseBuilderTitle">Ejercicio</b>
+          <div class="small">Seleccionar un ejercicio de la biblioteca</div>
+        </div>
+        <span id="draftCount" class="badge" style="display:none">0 / 5</span>
+      </div>
+
+      <label>Buscar ejercicio</label>
+      <div class="search-wrap">
+        <input id="search" placeholder="Ej.: Hack, remo, jalón…" autocomplete="off">
+        <div id="results" class="results"></div>
+      </div>
+
+      <div id="preview" class="exercise-preview">
+        <b id="previewName"></b>
+        <div id="previewMeta" class="small"></div>
+      </div>
     </div>
 
-    <div id="preview" class="exercise-preview">
-      <b id="previewName"></b>
-      <div id="previewMeta" class="small"></div>
-    </div>
-
-    <div class="grid" style="margin-top:16px">
-      <div>
-        <label>Repeticiones</label>
-        <input id="reps" placeholder="Ej.: 8-12">
-      </div>
-      <div>
-        <label>Tempo</label>
-        <input id="tempo" placeholder="Ej.: 1-0-3-1">
-      </div>
-      <div>
-        <label>Carga inicial</label>
-        <input id="load" placeholder="Ej.: 20 kg">
+    <div class="editor-section">
+      <div class="grid">
+        <div>
+          <label id="seriesLabel">Series</label>
+          <input id="series" type="number" min="1" max="10" value="3">
+        </div>
+        <div>
+          <label>Repeticiones</label>
+          <input id="reps" placeholder="Ej.: 8-12">
+        </div>
+        <div>
+          <label>Tempo</label>
+          <input id="tempo" placeholder="Ej.: 1-0-3-1">
+        </div>
+        <div>
+          <label>Carga inicial</label>
+          <input id="load" placeholder="Ej.: 20 kg">
+        </div>
+        <div class="full">
+          <label>Indicaciones para la alumna</label>
+          <textarea id="trainerNote" placeholder="Ej.: Última serie cerca del fallo."></textarea>
+          <div class="small" id="noteHelp" style="margin-top:6px">Opcional.</div>
+        </div>
       </div>
     </div>
 
@@ -326,8 +338,6 @@ button:disabled{cursor:not-allowed;opacity:1}
       <div><label>Nombre *</label><input id="nsNombre" placeholder="Ej.: Sabrina Gómez"></div>
       <div><label>Fecha de inicio</label><input id="nsFecha" type="date"></div>
       <div class="full"><label>Objetivo principal</label><input id="nsObjetivo" placeholder="Ej.: Hipertrofia y recomposición corporal"></div>
-      <div><label>Frecuencia / estructura</label><input id="nsFrecuencia" placeholder="Ej.: 3 días/semana"></div>
-      <div><label>Email</label><input id="nsEmail" type="email" placeholder="Opcional"></div>
     </div>
     <div class="actions">
       <button id="cancelStudentBtn" class="secondary" type="button">Cancelar</button>
@@ -347,8 +357,6 @@ button:disabled{cursor:not-allowed;opacity:1}
   <input type="hidden" name="entry.1054094851" id="afNombre">
   <input type="hidden" name="entry.26884833" id="afObjetivo">
   <input type="hidden" name="entry.435061558" id="afFecha">
-  <input type="hidden" name="entry.796823982" id="afFrecuencia">
-  <input type="hidden" name="entry.1087282600" id="afEmail">
   <input type="hidden" name="entry.1750407016" id="afToken">
   <input type="hidden" name="entry.249303003" id="afActivo">
 </form>
@@ -363,6 +371,7 @@ const STUDENT_STATE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7BP
 let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
 let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, renamingDay=null, editorDirty=false;
+let savingDays=new Set(), saveState={};
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function splitLine(line){
@@ -472,7 +481,7 @@ function generateStudentIdentity(name){
   return {token:slugifyName(name)+'-'+shortCode(), alumnaId:'ALU-'+Date.now().toString().slice(-7)};
 }
 function resetStudentModal(){
-  ['nsNombre','nsObjetivo','nsFecha','nsFrecuencia','nsEmail'].forEach(id=>document.getElementById(id).value='');
+  ['nsNombre','nsObjetivo','nsFecha'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('createdStudentBox').style.display='none';
   document.getElementById('saveStudentBtn').disabled=false;
 }
@@ -494,21 +503,17 @@ document.getElementById('saveStudentBtn').addEventListener('click',()=>{
   if(!nombre){ alert('Ingresá el nombre de la alumna.'); return; }
   const objetivo=document.getElementById('nsObjetivo').value.trim();
   const fecha=document.getElementById('nsFecha').value;
-  const frecuencia=document.getElementById('nsFrecuencia').value.trim();
-  const email=document.getElementById('nsEmail').value.trim();
   const {token,alumnaId}=generateStudentIdentity(nombre);
 
   document.getElementById('afAlumnaId').value=alumnaId;
   document.getElementById('afNombre').value=nombre;
   document.getElementById('afObjetivo').value=objetivo;
   document.getElementById('afFecha').value=fecha;
-  document.getElementById('afFrecuencia').value=frecuencia;
-  document.getElementById('afEmail').value=email;
   document.getElementById('afToken').value=token;
   document.getElementById('afActivo').value='TRUE';
   document.getElementById('studentForm').submit();
 
-  students.push({alumna_id:alumnaId,nombre,objetivo_principal:objetivo,fecha_inicio:fecha,frecuencia_estructura:frecuencia,email,token,activo:'TRUE'});
+  students.push({alumna_id:alumnaId,nombre,objetivo_principal:objetivo,fecha_inicio:fecha,token,activo:'TRUE'});
   populateStudents(token);
   loadCurrentRoutinesForStudent();
 
@@ -849,30 +854,42 @@ function openEditor(day,index=null){
   resetBuilderFields();
 
   const panel=document.getElementById('editorPanel');
-  document.getElementById('editorTitle').textContent=index===null?'Agregar en '+dayTitle(day):'Editar en '+dayTitle(day);
+  const typeSection=document.getElementById('typeSection');
+  const searchSection=document.getElementById('exerciseSelectSection');
+  const lockedBox=document.getElementById('lockedExerciseBox');
+  const lockedName=document.getElementById('lockedExerciseName');
 
-  if(index!==null){
+  typeSection.style.display=index===null?'block':'none';
+  lockedBox.style.display='none';
+  searchSection.style.display='block';
+
+  if(index===null){
+    document.getElementById('editorTitle').textContent='Agregar en '+dayTitle(day);
+  }else{
     const block=routines[day][index];
     document.getElementById('series').value=block.series||'3';
     document.getElementById('trainerNote').value=block.nota_entrenador||'';
     blockDraft=block.exercises.map(x=>({...x}));
     setBlockMode(block.tipo_bloque,true);
+
     if(block.tipo_bloque==='INDIVIDUAL' && blockDraft[0]){
       const ex=blockDraft[0];
-      selected=exercises.find(x=>x.id_ejercicio===ex.id_ejercicio)||{id_ejercicio:ex.id_ejercicio,ejercicio:ex.ejercicio};
-      document.getElementById('search').value=ex.ejercicio;
-      document.getElementById('preview').style.display='block';
-      document.getElementById('previewName').textContent=ex.ejercicio;
-      document.getElementById('previewMeta').textContent='Editando ejercicio';
+      selected={id_ejercicio:ex.id_ejercicio,ejercicio:ex.ejercicio};
+      document.getElementById('editorTitle').textContent=ex.ejercicio;
+      lockedName.textContent=ex.ejercicio;
+      lockedBox.style.display='block';
+      searchSection.style.display='none';
       document.getElementById('reps').value=ex.reps||'';
       document.getElementById('tempo').value=ex.tempo||'';
       document.getElementById('load').value=ex.load||'';
     }else{
+      document.getElementById('editorTitle').textContent='Superserie';
+      lockedName.textContent='Superserie · '+block.exercises.length+' ejercicios';
+      lockedBox.style.display='block';
+      searchSection.style.display='block';
       clearExerciseFields();
     }
-  }
 
-  if(index!==null){
     editorDirty=false;
     updateBuilderButtons();
   }
@@ -897,26 +914,26 @@ function currentExerciseEntry(){
   };
 }
 
-function markDirty(day){
-  dirtyDays.add(day);
-}
-
-function moveBlock(day,i,dir){
+async function moveBlock(day,i,dir){
+  if(savingDays.has(day)) return;
   const list=routines[day];
   const j=i+dir;
   if(j<0||j>=list.length) return;
   [list[i],list[j]]=[list[j],list[i]];
-  markDirty(day); closeEditor(false); renderWorkspace();
+  closeEditor(false);
+  await commitDay(day);
 }
 
-function removeBlock(day,i){
+async function removeBlock(day,i){
+  if(savingDays.has(day)) return;
   if(routines[day].length===1){
     alert('Por ahora no conviene dejar un día completamente vacío porque la versión anterior seguiría siendo la vigente. Agregá otro ejercicio antes de quitar el último.');
     return;
   }
   if(!confirm('¿Quitar este elemento de '+dayTitle(day)+'?')) return;
   routines[day].splice(i,1);
-  markDirty(day); closeEditor(false); renderWorkspace();
+  closeEditor(false);
+  await commitDay(day);
 }
 
 function summaryForDay(day){
@@ -933,30 +950,32 @@ function renderWorkspace(){
   if(!token){
     workspace.innerHTML='<div class="empty">Seleccioná una alumna.</div>';
     document.getElementById('weekSummary').textContent='';
+    document.getElementById('studentObjective').textContent='';
     return;
   }
 
   visibleDays=DAY_ORDER.filter(d=>visibleDays.includes(d) || routines[d].length);
   if(!visibleDays.length) visibleDays=['A'];
 
-  const totalExercises=visibleDays.reduce((n,d)=>n+routines[d].reduce((s,b)=>s+b.exercises.length,0),0);
-  const totalSupers=visibleDays.reduce((n,d)=>n+routines[d].filter(b=>b.tipo_bloque==='COMBINADO').length,0);
+  const currentStudent=allKnownStudents().find(s=>String(s.token||'').trim()===token);
+  const objective=String(currentStudent?.objetivo_principal||'').trim();
+  document.getElementById('studentObjective').textContent=objective?'Objetivo: '+objective:'';
   document.getElementById('weekSummary').textContent=
-    visibleDays.length+' día'+(visibleDays.length===1?'':'s')+' · '+totalExercises+' ejercicios'+(totalSupers?' · '+totalSupers+' superserie'+(totalSupers===1?'':'s'):'');
+    visibleDays.length+' día'+(visibleDays.length===1?'':'s');
 
   workspace.innerHTML='';
 
   visibleDays.forEach(day=>{
     const card=document.createElement('section');
-    card.className='day-card'+(collapsedDays.has(day)?' collapsed':'')+(dirtyDays.has(day)?' dirty':'');
+    card.className='day-card'+(collapsedDays.has(day)?' collapsed':'');
     card.id='day-card-'+day;
 
     const head=document.createElement('div'); head.className='day-head';
     const left=document.createElement('div'); left.className='day-head-left';
-    left.innerHTML='<div><div class="day-name">'+dayTitle(day)+'</div><div class="day-meta">'+summaryForDay(day)+(dirtyDays.has(day)?' · cambios sin guardar':'')+'</div></div>';
+    left.innerHTML='<div><div class="day-name">'+dayTitle(day)+'</div><div class="day-meta">'+summaryForDay(day)+'</div></div>';
 
     const ha=document.createElement('div'); ha.className='day-head-actions';
-    const rename=document.createElement('button'); rename.className='mini'; rename.textContent='Cambiar nombre'; rename.onclick=()=>openRenameDay(day);
+    const rename=document.createElement('button'); rename.className='mini'; rename.textContent='Cambiar nombre'; rename.disabled=savingDays.has(day); rename.onclick=()=>openRenameDay(day);
     const toggle=document.createElement('button'); toggle.className='mini'; toggle.textContent=collapsedDays.has(day)?'▼':'▲';
     toggle.title=collapsedDays.has(day)?'Desplegar':'Retraer';
     toggle.onclick=()=>{
@@ -984,10 +1003,10 @@ function renderWorkspace(){
         }
 
         const actions=document.createElement('div'); actions.className='routine-actions';
-        const up=document.createElement('button'); up.className='mini'; up.textContent='↑'; up.disabled=i===0; up.onclick=()=>moveBlock(day,i,-1);
-        const down=document.createElement('button'); down.className='mini'; down.textContent='↓'; down.disabled=i===routines[day].length-1; down.onclick=()=>moveBlock(day,i,1);
-        const edit=document.createElement('button'); edit.className='mini'; edit.textContent='Editar'; edit.onclick=()=>openEditor(day,i);
-        const del=document.createElement('button'); del.className='mini danger'; del.textContent='Quitar'; del.onclick=()=>removeBlock(day,i);
+        const up=document.createElement('button'); up.className='mini'; up.textContent='↑'; up.disabled=i===0 || savingDays.has(day); up.onclick=()=>moveBlock(day,i,-1);
+        const down=document.createElement('button'); down.className='mini'; down.textContent='↓'; down.disabled=i===routines[day].length-1 || savingDays.has(day); down.onclick=()=>moveBlock(day,i,1);
+        const edit=document.createElement('button'); edit.className='mini'; edit.textContent='Editar'; edit.disabled=savingDays.has(day); edit.onclick=()=>openEditor(day,i);
+        const del=document.createElement('button'); del.className='mini danger'; del.textContent='Quitar'; del.disabled=savingDays.has(day); del.onclick=()=>removeBlock(day,i);
         actions.append(up,down,edit,del);
         row.append(main,actions);
         list.appendChild(row);
@@ -1002,18 +1021,12 @@ function renderWorkspace(){
     body.appendChild(addSlot);
 
     const footer=document.createElement('div'); footer.className='day-footer';
-    const add=document.createElement('button'); add.className='secondary day-add-btn'; add.textContent='＋ Agregar'; add.onclick=()=>openEditor(day,null);
-    const save=document.createElement('div'); save.style.display='flex'; save.style.gap='8px'; save.style.alignItems='center'; save.style.flexWrap='wrap';
+    const add=document.createElement('button'); add.className='secondary day-add-btn'; add.textContent='＋ Agregar'; add.disabled=savingDays.has(day); add.onclick=()=>openEditor(day,null);
     const status=document.createElement('div'); status.className='save-status'; status.id='saveStatus-'+day;
-    const saveBtn=document.createElement('button'); saveBtn.className='primary'; saveBtn.id='saveDayBtn-'+day;
-    const hasChanges=dirtyDays.has(day);
-    saveBtn.textContent=hasChanges?'Guardar cambios':'Guardar día';
-    saveBtn.disabled=!hasChanges;
-    saveBtn.classList.toggle('save-day-disabled',!hasChanges);
-    saveBtn.title=hasChanges?'Guardar los cambios de este día':'No hay cambios pendientes';
-    saveBtn.onclick=()=>saveDay(day,saveBtn,status);
-    save.append(status,saveBtn);
-    footer.append(add,save); body.appendChild(footer);
+    status.textContent=saveState[day]||'';
+    if(saveState[day]==='✓ Guardado') status.classList.add('success');
+    if(saveState[day] && saveState[day].startsWith('Error')) status.classList.add('danger-text');
+    footer.append(add,status); body.appendChild(footer);
 
     card.appendChild(body); workspace.appendChild(card);
   });
@@ -1087,7 +1100,7 @@ document.addEventListener('click',e=>{
   }
 });
 
-document.getElementById('addBtn').onclick=()=>{
+document.getElementById('addBtn').onclick=async()=>{
   const ex=currentExerciseEntry();
   if(!ex) return;
   const day=currentDay();
@@ -1102,7 +1115,8 @@ document.getElementById('addBtn').onclick=()=>{
     };
     if(editingBlockIndex===null) routines[day].push(block);
     else routines[day][editingBlockIndex]=block;
-    markDirty(day); closeEditor(false); renderWorkspace();
+    closeEditor(false);
+    await commitDay(day);
     return;
   }
 
@@ -1118,7 +1132,7 @@ document.getElementById('addBtn').onclick=()=>{
   clearExerciseFields(); renderDraft();
 };
 
-document.getElementById('finishBlockBtn').onclick=()=>{
+document.getElementById('finishBlockBtn').onclick=async()=>{
   if(blockDraft.length<2){alert('Una superserie necesita al menos 2 ejercicios.');return;}
   const day=currentDay();
   const block={
@@ -1130,7 +1144,8 @@ document.getElementById('finishBlockBtn').onclick=()=>{
   };
   if(editingBlockIndex===null) routines[day].push(block);
   else routines[day][editingBlockIndex]=block;
-  markDirty(day); closeEditor(false); renderWorkspace();
+  closeEditor(false);
+  await commitDay(day);
 };
 
 document.getElementById('student').addEventListener('change',()=>loadCurrentRoutinesForStudent());
@@ -1163,48 +1178,53 @@ async function submitRoutineRow(ex, block, token, day, versionId, flatOrder, blo
   await sleep(450);
 }
 
-async function saveDay(day,btn,status){
-  if(!dirtyDays.has(day)) return;
+async function commitDay(day){
+  if(savingDays.has(day)) return false;
   const blocks=routines[day];
-  if(!blocks.length){
-    status.textContent='Agregá al menos un ejercicio antes de guardar.';
-    status.className='save-status danger-text';
-    return;
-  }
+  if(!blocks.length) return false;
+
   const token=document.getElementById('student').value;
   const versionId=makeVersionId(token,day);
-  btn.disabled=true; status.className='save-status';
+  savingDays.add(day);
+  saveState[day]='Guardando…';
+  renderWorkspace();
 
   const total=blocks.reduce((n,b)=>n+b.exercises.length,0);
-  let sent=0,flatOrder=0;
+  let flatOrder=0;
   try{
     for(let bi=0;bi<blocks.length;bi++){
       const block=blocks[bi];
       for(let ei=0;ei<block.exercises.length;ei++){
-        sent++; flatOrder++;
-        status.textContent='Guardando '+sent+' de '+total+'…';
+        flatOrder++;
         await submitRoutineRow(block.exercises[ei],block,token,day,versionId,flatOrder,bi+1,ei+1);
       }
     }
 
     currentRows=currentRows.filter(r=>!(String(r.token||'').trim()===token && String(r.dia||'').trim().toUpperCase()===day));
     blocks.forEach((block,bi)=>block.exercises.forEach((ex,ei)=>currentRows.push({
-      token,dia:day,version_id:versionId,orden:String(currentRows.length+1),
+      token,dia:day,version_id:versionId,orden:String(ei+1),
       id_ejercicio:ex.id_ejercicio,ejercicio:ex.ejercicio,series:block.series,reps:ex.reps,tempo:ex.tempo,
       carga_inicial:ex.load,nota_entrenador:block.nota_entrenador,bloque_id:block.bloque_id,tipo_bloque:block.tipo_bloque,
       orden_bloque:String(bi+1),orden_en_bloque:String(ei+1)
     })));
 
     dirtyDays.delete(day);
-    status.textContent='✓ Guardado';
-    status.className='save-status success';
-    btn.textContent='Guardar día';
-    setTimeout(()=>renderWorkspace(),800);
+    saveState[day]='✓ Guardado';
+    return true;
   }catch(e){
-    status.textContent='Hubo un problema durante el envío.';
-    status.className='save-status danger-text';
+    saveState[day]='Error al guardar';
+    return false;
   }finally{
-    btn.disabled=false;
+    savingDays.delete(day);
+    renderWorkspace();
+    if(saveState[day]==='✓ Guardado'){
+      setTimeout(()=>{
+        if(saveState[day]==='✓ Guardado'){
+          saveState[day]='';
+          renderWorkspace();
+        }
+      },1800);
+    }
   }
 }
 (async()=>{
