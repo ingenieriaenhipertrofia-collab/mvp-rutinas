@@ -62,6 +62,20 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
 .inactive-item input{width:auto}
 .editing{outline:2px solid #111827;outline-offset:2px}
 
+.block-type-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.type-btn{background:#f3f4f6;color:#111827;border:1px solid #d1d5db}
+.type-btn.active{background:#111827;color:#fff;border-color:#111827}
+.builder-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0 8px}
+.draft-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.draft-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fafafa}
+.block-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+.block-card.combined{border-left:4px solid #111827}
+.block-label{font-size:11px;font-weight:800;letter-spacing:.45px;text-transform:uppercase;color:#6b7280;margin-bottom:6px}
+.block-exercises{display:flex;flex-direction:column;gap:4px;margin-top:7px}
+.block-exercise{font-size:13px;color:#374151}
+.block-note{font-size:12px;color:#4b5563;background:#f3f4f6;border-radius:8px;padding:8px 10px;margin-top:8px}
+@media(max-width:700px){.block-type-row{grid-template-columns:1fr 1fr}.item{align-items:flex-start}.item-actions{min-width:110px}}
+
 </style>
 </head>
 <body>
@@ -93,6 +107,32 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
   </div>
 
   <div class="card">
+    <label>Tipo de bloque</label>
+    <div class="block-type-row">
+      <button id="individualTypeBtn" class="type-btn active" type="button">Ejercicio individual</button>
+      <button id="combinedTypeBtn" class="type-btn" type="button">Superserie</button>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label id="seriesLabel">Series</label>
+        <input id="series" type="number" min="1" max="5" value="3">
+      </div>
+      <div id="blockInfoBox">
+        <label>Indicaciones para la alumna</label>
+        <textarea id="trainerNote" placeholder="Ej.: Sin descanso entre ejercicios. Descansá 90 s al terminar cada vuelta."></textarea>
+      </div>
+    </div>
+    <div class="small" id="noteHelp" style="margin-top:6px">Opcional · para un ejercicio individual, la nota corresponde a ese ejercicio.</div>
+
+    <div class="builder-head">
+      <div>
+        <b id="exerciseBuilderTitle">Ejercicio</b>
+        <div class="small" id="combinedHint">Seleccioná un ejercicio de la biblioteca.</div>
+      </div>
+      <span id="draftCount" class="badge" style="display:none">0 / 5</span>
+    </div>
+
     <label>Buscar ejercicio</label>
     <div class="search-wrap">
       <input id="search" placeholder="Ej.: Hack, remo, jalón…" autocomplete="off">
@@ -105,10 +145,6 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
     </div>
 
     <div class="grid" style="margin-top:16px">
-      <div>
-        <label>Series</label>
-        <input id="series" type="number" min="1" max="5" value="3">
-      </div>
       <div>
         <label>Repeticiones</label>
         <input id="reps" placeholder="Ej.: 8-12">
@@ -123,18 +159,21 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
       </div>
     </div>
 
-    <div style="margin-top:14px">
-      <label>Indicaciones para la alumna</label>
-      <textarea id="trainerNote" placeholder="Ej.: Última serie cerca del fallo. Si completás 12 reps en todas, subimos carga."></textarea>
-      <div class="small" style="margin-top:6px">Opcional · esta nota es específica para esta alumna y este ejercicio.</div>
+    <div id="draftWrap" style="display:none">
+      <div class="builder-head">
+        <b>Ejercicios de la superserie</b>
+        <span class="small">Mínimo 2 · máximo 5</span>
+      </div>
+      <div id="draftList" class="draft-list"></div>
     </div>
 
     <div class="actions">
       <button id="cancelEditBtn" class="secondary" type="button" style="display:none">Cancelar edición</button>
+      <button id="finishBlockBtn" class="secondary" type="button" style="display:none">Agregar superserie a rutina</button>
       <button id="addBtn" class="primary" type="button">Agregar ejercicio</button>
     </div>
 
-    <div class="note">La rutina vigente se carga automáticamente. Podés editar, quitar, reordenar o agregar ejercicios y luego guardar una nueva versión completa del día.</div>
+    <div class="note">Los ejercicios individuales se agregan directamente. En una superserie, cargá entre 2 y 5 ejercicios; todos comparten el mismo número de vueltas y una única nota del entrenador.</div>
   </div>
 
   <div class="card">
@@ -165,6 +204,10 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
     <input type="hidden" name="entry.2087582087" id="sfTempo">
     <input type="hidden" name="entry.465891400" id="sfCargaInicial">
     <input type="hidden" name="entry.677500509" id="sfNotaEntrenador">
+    <input type="hidden" name="entry.305776418" id="sfBloqueId">
+    <input type="hidden" name="entry.460252504" id="sfTipoBloque">
+    <input type="hidden" name="entry.1068511390" id="sfOrdenBloque">
+    <input type="hidden" name="entry.494109986" id="sfOrdenEnBloque">
   </form>
   <iframe name="save_iframe" style="display:none"></iframe>
 </div>
@@ -244,7 +287,8 @@ const CURRENT_ROUTINES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 const STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=1888921254&single=true&output=csv";
 const NEW_STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYAKol1CySnuHwPDVktKld_padRKy9F_ZYYogyDCkOz7hZkBFKCnxiYnej01QsUPPuhKjejEWWEQ/pub?gid=1004033237&single=true&output=csv";
 const STUDENT_STATE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7BPBIklMyjNK_GcJ1K0slb_JW0fkU7B82AutWkglCb8d5UmiKDaiW4urPmtCxGTXANdIB0Z21l1kO/pub?gid=1659100872&single=true&output=csv";
-let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]}, editingIndex=null;
+let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
+let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function splitLine(line){
@@ -525,85 +569,202 @@ document.getElementById('reactivateStudentBtn').addEventListener('click',async()
   renderInactiveList();
   loadCurrentRoutinesForStudent();
 });
+
 function currentDay(){
   const d=document.getElementById('day').value;
   if(!routines[d]) routines[d]=[];
   return d;
 }
+
+function makeBlockId(day){
+  return 'BLK_'+day+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+}
+
+function normalizeType(v){
+  return String(v||'').trim().toUpperCase()==='COMBINADO' ? 'COMBINADO' : 'INDIVIDUAL';
+}
+
 function loadCurrentRoutinesForStudent(){
   const token=document.getElementById('student').value;
-  const fresh={A:[],B:[],C:[]};
-
-  currentRows
+  const fresh={A:[],B:[],C:[],D:[],E:[],F:[]};
+  const rows=currentRows
     .filter(r=>String(r.token||'').trim()===token)
     .sort((a,b)=>{
       const d=String(a.dia||'').localeCompare(String(b.dia||''));
       if(d!==0) return d;
-      return (Number(a.orden)||0)-(Number(b.orden)||0);
-    })
-    .forEach(r=>{
-      const day=String(r.dia||'').trim().toUpperCase();
-      if(!fresh[day]) fresh[day]=[];
-      fresh[day].push({
-        id_ejercicio:r.id_ejercicio||'',
-        ejercicio:r.ejercicio||'',
-        series:r.series||'3',
-        reps:r.reps||'',
-        tempo:r.tempo||'',
-        load:r.carga_inicial||'',
-        nota_entrenador:r.nota_entrenador||''
-      });
+      const bo=(Number(a.orden_bloque)||Number(a.orden)||0)-(Number(b.orden_bloque)||Number(b.orden)||0);
+      if(bo!==0) return bo;
+      return (Number(a.orden_en_bloque)||1)-(Number(b.orden_en_bloque)||1);
     });
 
+  const maps={A:new Map(),B:new Map(),C:new Map(),D:new Map(),E:new Map(),F:new Map()};
+
+  rows.forEach((r,idx)=>{
+    const day=String(r.dia||'').trim().toUpperCase();
+    if(!fresh[day]){fresh[day]=[]; maps[day]=new Map();}
+    const type=normalizeType(r.tipo_bloque);
+    const fallback='LEGACY_'+day+'_'+String(r.orden||idx+1);
+    const blockId=String(r.bloque_id||'').trim() || fallback;
+    let block=maps[day].get(blockId);
+    if(!block){
+      block={
+        bloque_id:blockId,
+        tipo_bloque:type,
+        series:r.series||'3',
+        nota_entrenador:r.nota_entrenador||'',
+        exercises:[]
+      };
+      maps[day].set(blockId,block);
+      fresh[day].push(block);
+    }
+    if(!block.nota_entrenador && r.nota_entrenador) block.nota_entrenador=r.nota_entrenador;
+    if(!block.series && r.series) block.series=r.series;
+    block.exercises.push({
+      id_ejercicio:r.id_ejercicio||'',
+      ejercicio:r.ejercicio||'',
+      reps:r.reps||'',
+      tempo:r.tempo||'',
+      load:r.carga_inicial||''
+    });
+  });
+
   routines=fresh;
-  clearForm();
+  resetBuilder();
   renderRoutine();
 }
 
+function setBlockMode(mode, keepDraft=false){
+  blockMode=mode==='COMBINADO'?'COMBINADO':'INDIVIDUAL';
+  document.getElementById('individualTypeBtn').classList.toggle('active',blockMode==='INDIVIDUAL');
+  document.getElementById('combinedTypeBtn').classList.toggle('active',blockMode==='COMBINADO');
+  document.getElementById('seriesLabel').textContent=blockMode==='COMBINADO'?'Vueltas':'Series';
+  document.getElementById('noteHelp').textContent=blockMode==='COMBINADO'
+    ? 'Opcional · esta nota se mostrará una sola vez para toda la superserie.'
+    : 'Opcional · para un ejercicio individual, la nota corresponde a ese ejercicio.';
+  document.getElementById('exerciseBuilderTitle').textContent=blockMode==='COMBINADO'?'Agregar ejercicio a la superserie':'Ejercicio';
+  document.getElementById('draftWrap').style.display=blockMode==='COMBINADO'?'block':'none';
+  document.getElementById('draftCount').style.display=blockMode==='COMBINADO'?'inline-block':'none';
+  document.getElementById('finishBlockBtn').style.display=blockMode==='COMBINADO'?'inline-block':'none';
+  if(!keepDraft){
+    blockDraft=[];
+    editingDraftIndex=null;
+  }
+  renderDraft();
+  updateBuilderButtons();
+}
 
-function clearForm(){
+function clearExerciseFields(){
   selected=null;
-  editingIndex=null;
+  editingDraftIndex=null;
   document.getElementById('search').value='';
   document.getElementById('preview').style.display='none';
-  document.getElementById('series').value='3';
   document.getElementById('reps').value='';
   document.getElementById('tempo').value='';
   document.getElementById('load').value='';
-  document.getElementById('trainerNote').value='';
-  document.getElementById('addBtn').textContent='Agregar ejercicio';
-  document.getElementById('cancelEditBtn').style.display='none';
+  updateBuilderButtons();
 }
 
-function startEdit(i){
-  const r=routines[currentDay()][i];
-  editingIndex=i;
-  selected=exercises.find(ex=>ex.id_ejercicio===r.id_ejercicio) || {id_ejercicio:r.id_ejercicio,ejercicio:r.ejercicio};
-  document.getElementById('search').value=r.ejercicio;
+function resetBuilder(){
+  editingBlockIndex=null;
+  blockDraft=[];
+  document.getElementById('series').value='3';
+  document.getElementById('trainerNote').value='';
+  document.getElementById('cancelEditBtn').style.display='none';
+  setBlockMode('INDIVIDUAL',true);
+  clearExerciseFields();
+}
+
+function updateBuilderButtons(){
+  const add=document.getElementById('addBtn');
+  const finish=document.getElementById('finishBlockBtn');
+  if(blockMode==='INDIVIDUAL'){
+    add.textContent=editingBlockIndex===null?'Agregar ejercicio':'Guardar cambios';
+    finish.style.display='none';
+  }else{
+    add.textContent=editingDraftIndex===null?'Agregar a superserie':'Guardar ejercicio';
+    finish.style.display='inline-block';
+    finish.textContent=editingBlockIndex===null?'Agregar superserie a rutina':'Guardar superserie';
+    finish.disabled=blockDraft.length<2;
+  }
+  document.getElementById('draftCount').textContent=blockDraft.length+' / 5';
+}
+
+function renderDraft(){
+  const box=document.getElementById('draftList');
+  if(!box) return;
+  box.innerHTML='';
+  blockDraft.forEach((ex,i)=>{
+    const row=document.createElement('div');
+    row.className='draft-item';
+    const left=document.createElement('div');
+    left.innerHTML='<b>'+(i+1)+'. '+ex.ejercicio+'</b><div class="small">'+(ex.reps||'—')+' reps · tempo '+(ex.tempo||'—')+(ex.load?' · '+ex.load:'')+'</div>';
+    const actions=document.createElement('div');actions.className='item-actions';
+
+    const up=document.createElement('button');up.className='mini';up.textContent='↑';up.disabled=i===0;
+    up.onclick=()=>{[blockDraft[i-1],blockDraft[i]]=[blockDraft[i],blockDraft[i-1]];renderDraft();};
+    const down=document.createElement('button');down.className='mini';down.textContent='↓';down.disabled=i===blockDraft.length-1;
+    down.onclick=()=>{[blockDraft[i+1],blockDraft[i]]=[blockDraft[i],blockDraft[i+1]];renderDraft();};
+    const edit=document.createElement('button');edit.className='mini';edit.textContent='Editar';
+    edit.onclick=()=>editDraftExercise(i);
+    const del=document.createElement('button');del.className='mini danger';del.textContent='Quitar';
+    del.onclick=()=>{blockDraft.splice(i,1); if(editingDraftIndex===i) clearExerciseFields(); renderDraft(); updateBuilderButtons();};
+
+    actions.append(up,down,edit,del);row.append(left,actions);box.appendChild(row);
+  });
+  updateBuilderButtons();
+}
+
+function editDraftExercise(i){
+  const ex=blockDraft[i];
+  editingDraftIndex=i;
+  selected=exercises.find(x=>x.id_ejercicio===ex.id_ejercicio)||{id_ejercicio:ex.id_ejercicio,ejercicio:ex.ejercicio};
+  document.getElementById('search').value=ex.ejercicio;
   document.getElementById('preview').style.display='block';
-  document.getElementById('previewName').textContent=r.ejercicio;
-  document.getElementById('previewMeta').textContent='Editando ejercicio';
-  document.getElementById('series').value=r.series;
-  document.getElementById('reps').value=r.reps||'';
-  document.getElementById('tempo').value=r.tempo||'';
-  document.getElementById('load').value=r.load||'';
-  document.getElementById('trainerNote').value=r.nota_entrenador||'';
-  document.getElementById('addBtn').textContent='Guardar cambios';
+  document.getElementById('previewName').textContent=ex.ejercicio;
+  document.getElementById('previewMeta').textContent='Editando dentro de la superserie';
+  document.getElementById('reps').value=ex.reps||'';
+  document.getElementById('tempo').value=ex.tempo||'';
+  document.getElementById('load').value=ex.load||'';
+  updateBuilderButtons();
+}
+
+function startEditBlock(i){
+  const block=routines[currentDay()][i];
+  editingBlockIndex=i;
+  document.getElementById('series').value=block.series||'3';
+  document.getElementById('trainerNote').value=block.nota_entrenador||'';
   document.getElementById('cancelEditBtn').style.display='inline-block';
+  blockDraft=block.exercises.map(x=>({...x}));
+  setBlockMode(block.tipo_bloque, true);
+
+  if(block.tipo_bloque==='INDIVIDUAL' && blockDraft[0]){
+    const ex=blockDraft[0];
+    selected=exercises.find(x=>x.id_ejercicio===ex.id_ejercicio)||{id_ejercicio:ex.id_ejercicio,ejercicio:ex.ejercicio};
+    document.getElementById('search').value=ex.ejercicio;
+    document.getElementById('preview').style.display='block';
+    document.getElementById('previewName').textContent=ex.ejercicio;
+    document.getElementById('previewMeta').textContent='Editando ejercicio';
+    document.getElementById('reps').value=ex.reps||'';
+    document.getElementById('tempo').value=ex.tempo||'';
+    document.getElementById('load').value=ex.load||'';
+  }else{
+    clearExerciseFields();
+  }
+  updateBuilderButtons();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function moveItem(i,dir){
+function moveBlock(i,dir){
   const list=routines[currentDay()];
   const j=i+dir;
-  if(j<0 || j>=list.length) return;
+  if(j<0||j>=list.length) return;
   [list[i],list[j]]=[list[j],list[i]];
   renderRoutine();
 }
 
-function removeItem(i){
+function removeBlock(i){
   routines[currentDay()].splice(i,1);
-  if(editingIndex===i) clearForm();
+  if(editingBlockIndex===i) resetBuilder();
   renderRoutine();
 }
 
@@ -615,40 +776,44 @@ function renderRoutine(){
   document.getElementById('saveStatus').textContent='';
   const box=document.getElementById('routineList');box.innerHTML='';
   if(!routine.length){
-    box.innerHTML='<div class="empty">Todavía no agregaste ejercicios en el Día '+day+'.</div>';
+    box.innerHTML='<div class="empty">Todavía no agregaste bloques en el Día '+day+'.</div>';
     return;
   }
-  routine.forEach((r,i)=>{
-    const item=document.createElement('div');item.className='item';
+
+  routine.forEach((block,i)=>{
+    const item=document.createElement('div');
+    item.className='item block-card'+(block.tipo_bloque==='COMBINADO'?' combined':'');
     const left=document.createElement('div');left.className='item-left';
-    left.innerHTML='<div class="order">'+(i+1)+'</div><div class="item-main"><div class="item-title">'+r.ejercicio+'</div><div class="item-sub">'+r.series+' series · '+(r.reps||'—')+' reps · tempo '+(r.tempo||'—')+(r.load?' · '+r.load:'')+'</div>'+(r.nota_entrenador?'<div class="small" style="margin-top:5px">📝 '+r.nota_entrenador+'</div>':'')+'</div>';
+    const count=block.exercises.length;
+    const title=block.tipo_bloque==='COMBINADO'
+      ? 'Superserie · '+count+' ejercicios · '+block.series+' vueltas'
+      : (block.exercises[0]?.ejercicio||'Ejercicio');
+    const details=block.tipo_bloque==='COMBINADO'
+      ? block.exercises.map((e,j)=>'<div class="block-exercise">'+(j+1)+'. '+e.ejercicio+' · '+(e.reps||'—')+' reps</div>').join('')
+      : '<div class="item-sub">'+block.series+' series · '+(block.exercises[0]?.reps||'—')+' reps · tempo '+(block.exercises[0]?.tempo||'—')+(block.exercises[0]?.load?' · '+block.exercises[0].load:'')+'</div>';
 
-    const actions=document.createElement('div');
-    actions.className='item-actions';
+    left.innerHTML='<div class="order">'+(i+1)+'</div><div class="item-main"><div class="block-label">'+(block.tipo_bloque==='COMBINADO'?'Bloque combinado':'Bloque individual')+'</div><div class="item-title">'+title+'</div>'+(block.tipo_bloque==='COMBINADO'?'<div class="block-exercises">'+details+'</div>':details)+(block.nota_entrenador?'<div class="block-note">📝 '+block.nota_entrenador+'</div>':'')+'</div>';
 
-    const up=document.createElement('button');
-    up.className='mini'; up.textContent='↑';
-    up.disabled=i===0;
-    up.onclick=()=>moveItem(i,-1);
-
-    const down=document.createElement('button');
-    down.className='mini'; down.textContent='↓';
-    down.disabled=i===routine.length-1;
-    down.onclick=()=>moveItem(i,1);
-
-    const edit=document.createElement('button');
-    edit.className='mini'; edit.textContent='Editar';
-    edit.onclick=()=>startEdit(i);
-
-    const del=document.createElement('button');
-    del.className='mini danger'; del.textContent='Quitar';
-    del.onclick=()=>removeItem(i);
-
-    actions.append(up,down,edit,del);
-    item.append(left,actions);
-    box.appendChild(item);
+    const actions=document.createElement('div');actions.className='item-actions';
+    const up=document.createElement('button');up.className='mini';up.textContent='↑';up.disabled=i===0;up.onclick=()=>moveBlock(i,-1);
+    const down=document.createElement('button');down.className='mini';down.textContent='↓';down.disabled=i===routine.length-1;down.onclick=()=>moveBlock(i,1);
+    const edit=document.createElement('button');edit.className='mini';edit.textContent='Editar';edit.onclick=()=>startEditBlock(i);
+    const del=document.createElement('button');del.className='mini danger';del.textContent='Quitar';del.onclick=()=>removeBlock(i);
+    actions.append(up,down,edit,del);item.append(left,actions);box.appendChild(item);
   });
 }
+
+document.getElementById('individualTypeBtn').onclick=()=>{
+  if(blockMode==='COMBINADO' && blockDraft.length && !confirm('¿Cambiar a ejercicio individual? Se vaciará la superserie que estás armando.')) return;
+  setBlockMode('INDIVIDUAL');
+  clearExerciseFields();
+};
+document.getElementById('combinedTypeBtn').onclick=()=>{
+  if(blockMode==='INDIVIDUAL' && selected && !confirm('¿Cambiar a superserie? Se limpiará el ejercicio que estabas cargando.')) return;
+  setBlockMode('COMBINADO');
+  clearExerciseFields();
+};
+
 document.getElementById('search').addEventListener('input',e=>{
   const q=norm(e.target.value.trim());
   selected=null;
@@ -659,40 +824,73 @@ document.getElementById('search').addEventListener('input',e=>{
 document.addEventListener('click',e=>{
   if(!e.target.closest('.search-wrap')) document.getElementById('results').style.display='none';
 });
-document.getElementById('addBtn').onclick=()=>{
-  if(!selected){alert('Primero seleccioná un ejercicio de la biblioteca.');return;}
-  const entry={
+
+function currentExerciseEntry(){
+  if(!selected){alert('Primero seleccioná un ejercicio de la biblioteca.');return null;}
+  return {
     id_ejercicio:selected.id_ejercicio,
     ejercicio:selected.ejercicio,
-    series:document.getElementById('series').value||'3',
     reps:document.getElementById('reps').value.trim(),
     tempo:document.getElementById('tempo').value.trim(),
-    load:document.getElementById('load').value.trim(),
-    nota_entrenador:document.getElementById('trainerNote').value.trim()
+    load:document.getElementById('load').value.trim()
   };
+}
+
+document.getElementById('addBtn').onclick=()=>{
+  const ex=currentExerciseEntry();
+  if(!ex) return;
   const day=currentDay();
-  if(editingIndex===null){
-    routines[day].push(entry);
-  }else{
-    routines[day][editingIndex]=entry;
+
+  if(blockMode==='INDIVIDUAL'){
+    const block={
+      bloque_id:editingBlockIndex!==null ? routines[day][editingBlockIndex].bloque_id : makeBlockId(day),
+      tipo_bloque:'INDIVIDUAL',
+      series:document.getElementById('series').value||'3',
+      nota_entrenador:document.getElementById('trainerNote').value.trim(),
+      exercises:[ex]
+    };
+    if(editingBlockIndex===null) routines[day].push(block);
+    else routines[day][editingBlockIndex]=block;
+    resetBuilder();
+    renderRoutine();
+    return;
   }
-  clearForm();
+
+  if(editingDraftIndex!==null){
+    blockDraft[editingDraftIndex]=ex;
+    editingDraftIndex=null;
+  }else{
+    if(blockDraft.length>=5){alert('El máximo es de 5 ejercicios por superserie.');return;}
+    blockDraft.push(ex);
+  }
+  clearExerciseFields();
+  renderDraft();
+};
+
+document.getElementById('finishBlockBtn').onclick=()=>{
+  if(blockDraft.length<2){alert('Una superserie necesita al menos 2 ejercicios.');return;}
+  if(blockDraft.length>5){alert('El máximo es de 5 ejercicios.');return;}
+  const day=currentDay();
+  const block={
+    bloque_id:editingBlockIndex!==null ? routines[day][editingBlockIndex].bloque_id : makeBlockId(day),
+    tipo_bloque:'COMBINADO',
+    series:document.getElementById('series').value||'3',
+    nota_entrenador:document.getElementById('trainerNote').value.trim(),
+    exercises:blockDraft.map(x=>({...x}))
+  };
+  if(editingBlockIndex===null) routines[day].push(block);
+  else routines[day][editingBlockIndex]=block;
+  resetBuilder();
   renderRoutine();
 };
 
-document.getElementById('cancelEditBtn').onclick=()=>{
-  clearForm();
-};
+document.getElementById('cancelEditBtn').onclick=()=>resetBuilder();
 
 document.getElementById('day').addEventListener('change',()=>{
-  clearForm();
+  resetBuilder();
   renderRoutine();
 });
-
-document.getElementById('student').addEventListener('change',()=>{
-  loadCurrentRoutinesForStudent();
-});
-
+document.getElementById('student').addEventListener('change',()=>loadCurrentRoutinesForStudent());
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function makeVersionId(token,day){
@@ -702,43 +900,51 @@ function makeVersionId(token,day){
 }
 function sleep(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
 
-async function submitRoutineRow(row, token, day, versionId, order){
+async function submitRoutineRow(ex, block, token, day, versionId, flatOrder, blockOrder, innerOrder){
   document.getElementById('sfToken').value=token;
   document.getElementById('sfDia').value=day;
   document.getElementById('sfVersion').value=versionId;
-  document.getElementById('sfOrden').value=order;
-  document.getElementById('sfIdEjercicio').value=row.id_ejercicio||'';
-  document.getElementById('sfEjercicio').value=row.ejercicio||'';
-  document.getElementById('sfSeries').value=row.series||'';
-  document.getElementById('sfReps').value=row.reps||'';
-  document.getElementById('sfTempo').value=row.tempo||'';
-  document.getElementById('sfCargaInicial').value=row.load||'';
-  document.getElementById('sfNotaEntrenador').value=row.nota_entrenador||'';
+  document.getElementById('sfOrden').value=flatOrder;
+  document.getElementById('sfIdEjercicio').value=ex.id_ejercicio||'';
+  document.getElementById('sfEjercicio').value=ex.ejercicio||'';
+  document.getElementById('sfSeries').value=block.series||'';
+  document.getElementById('sfReps').value=ex.reps||'';
+  document.getElementById('sfTempo').value=ex.tempo||'';
+  document.getElementById('sfCargaInicial').value=ex.load||'';
+  document.getElementById('sfNotaEntrenador').value=block.nota_entrenador||'';
+  document.getElementById('sfBloqueId').value=block.bloque_id||'';
+  document.getElementById('sfTipoBloque').value=block.tipo_bloque||'INDIVIDUAL';
+  document.getElementById('sfOrdenBloque').value=blockOrder;
+  document.getElementById('sfOrdenEnBloque').value=innerOrder;
   document.getElementById('saveForm').submit();
   await sleep(450);
 }
 
 document.getElementById('saveDayBtn').addEventListener('click', async ()=>{
   const day=currentDay();
-  const list=routines[day];
+  const blocks=routines[day];
   const status=document.getElementById('saveStatus');
-
-  if(!list.length){
+  if(!blocks.length){
     status.textContent='No hay ejercicios para guardar en el Día '+day+'.';
     status.className='save-status danger-text';
     return;
   }
-
   const token=document.getElementById('student').value;
   const versionId=makeVersionId(token,day);
   const btn=document.getElementById('saveDayBtn');
   btn.disabled=true;
   status.className='save-status';
 
+  const total=blocks.reduce((n,b)=>n+b.exercises.length,0);
+  let sent=0, flatOrder=0;
   try{
-    for(let i=0;i<list.length;i++){
-      status.textContent='Guardando '+(i+1)+' de '+list.length+'…';
-      await submitRoutineRow(list[i], token, day, versionId, i+1);
+    for(let bi=0;bi<blocks.length;bi++){
+      const block=blocks[bi];
+      for(let ei=0;ei<block.exercises.length;ei++){
+        sent++; flatOrder++;
+        status.textContent='Guardando '+sent+' de '+total+'…';
+        await submitRoutineRow(block.exercises[ei],block,token,day,versionId,flatOrder,bi+1,ei+1);
+      }
     }
     status.textContent='✓ Día '+day+' enviado. Versión: '+versionId;
     status.className='save-status success';
