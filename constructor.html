@@ -99,8 +99,12 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
 .routine-note{font-size:12px;background:#f5f6f8;border-radius:8px;padding:7px 9px;margin-top:7px;color:#4b5563}
 .routine-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .day-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
-.inline-editor{margin:10px 0 0;border:1px dashed #cfd4dc;border-radius:14px;padding:14px;background:#fcfcfd}
+.inline-editor{margin:12px 0 2px;border:1px solid #c7cdd5;border-radius:14px;padding:16px;background:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
 .inline-editor h3{margin:0 0 12px}
+.inline-editor input,.inline-editor select,.inline-editor textarea{background:#fff}
+button:disabled{cursor:not-allowed;opacity:1}
+.save-day-disabled{background:#f4f5f6!important;color:#a2a8b0!important;border:1px solid #e1e4e8!important;box-shadow:none!important}
+.editor-save-disabled{background:#d9dde2!important;color:#8a919a!important;box-shadow:none!important}
 .editor-section{margin-top:14px}
 .editor-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .day-add-btn{width:auto}
@@ -154,7 +158,7 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
 
   <div id="editorPanel" class="inline-editor" style="display:none">
     <div class="editor-toolbar">
-      <h3 id="editorTitle">Agregar</h3>
+      <div><div class="small" style="font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#69717c">Editor</div><h3 id="editorTitle">Agregar</h3></div>
       <button id="closeEditorBtn" class="icon-btn" type="button">✕</button>
     </div>
 
@@ -358,7 +362,7 @@ const NEW_STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYA
 const STUDENT_STATE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7BPBIklMyjNK_GcJ1K0slb_JW0fkU7B82AutWkglCb8d5UmiKDaiW4urPmtCxGTXANdIB0Z21l1kO/pub?gid=1659100872&single=true&output=csv";
 let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
-let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, renamingDay=null;
+let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, renamingDay=null, editorDirty=false;
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function splitLine(line){
@@ -747,11 +751,18 @@ function resetBuilderFields(){
 
 function closeEditor(rerender=false){
   parkEditor();
+  editorDirty=false;
   editorContext=null;
   editingBlockIndex=null;
   blockDraft=[];
   editingDraftIndex=null;
   if(rerender) renderWorkspace();
+}
+
+function markEditorDirty(){
+  if(!editorContext) return;
+  editorDirty=true;
+  updateBuilderButtons();
 }
 
 function setBlockMode(mode, keepDraft=false){
@@ -777,11 +788,18 @@ function updateBuilderButtons(){
   if(blockMode==='INDIVIDUAL'){
     add.textContent=editingBlockIndex===null?'Agregar ejercicio':'Guardar cambios';
     finish.style.display='none';
+    const noChanges=editingBlockIndex!==null && !editorDirty;
+    add.disabled=noChanges;
+    add.classList.toggle('editor-save-disabled',noChanges);
   }else{
     add.textContent=editingDraftIndex===null?'Agregar a superserie':'Guardar ejercicio';
+    add.disabled=false;
+    add.classList.remove('editor-save-disabled');
     finish.style.display='inline-block';
     finish.textContent=editingBlockIndex===null?'Agregar superserie':'Guardar superserie';
-    finish.disabled=blockDraft.length<2;
+    const noChanges=editingBlockIndex!==null && !editorDirty;
+    finish.disabled=blockDraft.length<2 || noChanges;
+    finish.classList.toggle('editor-save-disabled',noChanges || blockDraft.length<2);
   }
   document.getElementById('draftCount').textContent=blockDraft.length+' / 5';
 }
@@ -796,12 +814,12 @@ function renderDraft(){
     left.innerHTML='<b>'+(i+1)+'. '+ex.ejercicio+'</b><div class="small">'+(ex.reps||'—')+' reps · tempo '+(ex.tempo||'—')+(ex.load?' · '+ex.load:'')+'</div>';
     const actions=document.createElement('div'); actions.className='item-actions';
     const up=document.createElement('button'); up.className='mini'; up.textContent='↑'; up.disabled=i===0;
-    up.onclick=()=>{[blockDraft[i-1],blockDraft[i]]=[blockDraft[i],blockDraft[i-1]];renderDraft();};
+    up.onclick=()=>{[blockDraft[i-1],blockDraft[i]]=[blockDraft[i],blockDraft[i-1]];markEditorDirty();renderDraft();};
     const down=document.createElement('button'); down.className='mini'; down.textContent='↓'; down.disabled=i===blockDraft.length-1;
-    down.onclick=()=>{[blockDraft[i+1],blockDraft[i]]=[blockDraft[i],blockDraft[i+1]];renderDraft();};
+    down.onclick=()=>{[blockDraft[i+1],blockDraft[i]]=[blockDraft[i],blockDraft[i+1]];markEditorDirty();renderDraft();};
     const edit=document.createElement('button'); edit.className='mini'; edit.textContent='Editar'; edit.onclick=()=>editDraftExercise(i);
     const del=document.createElement('button'); del.className='mini danger'; del.textContent='Quitar';
-    del.onclick=()=>{blockDraft.splice(i,1);renderDraft();clearExerciseFields();};
+    del.onclick=()=>{blockDraft.splice(i,1);markEditorDirty();renderDraft();clearExerciseFields();};
     actions.append(up,down,edit,del); row.append(left,actions); box.appendChild(row);
   });
   updateBuilderButtons();
@@ -827,6 +845,7 @@ function openEditor(day,index=null){
 
   editorContext={day,index};
   editingBlockIndex=index;
+  editorDirty=(index===null);
   resetBuilderFields();
 
   const panel=document.getElementById('editorPanel');
@@ -851,6 +870,11 @@ function openEditor(day,index=null){
     }else{
       clearExerciseFields();
     }
+  }
+
+  if(index!==null){
+    editorDirty=false;
+    updateBuilderButtons();
   }
 
   const slot=document.getElementById(index===null?'day-add-slot-'+day:'day-edit-slot-'+day+'-'+index);
@@ -982,7 +1006,11 @@ function renderWorkspace(){
     const save=document.createElement('div'); save.style.display='flex'; save.style.gap='8px'; save.style.alignItems='center'; save.style.flexWrap='wrap';
     const status=document.createElement('div'); status.className='save-status'; status.id='saveStatus-'+day;
     const saveBtn=document.createElement('button'); saveBtn.className='primary'; saveBtn.id='saveDayBtn-'+day;
-    saveBtn.textContent=dirtyDays.has(day)?'Guardar cambios':'Guardar día';
+    const hasChanges=dirtyDays.has(day);
+    saveBtn.textContent=hasChanges?'Guardar cambios':'Guardar día';
+    saveBtn.disabled=!hasChanges;
+    saveBtn.classList.toggle('save-day-disabled',!hasChanges);
+    saveBtn.title=hasChanges?'Guardar los cambios de este día':'No hay cambios pendientes';
     saveBtn.onclick=()=>saveDay(day,saveBtn,status);
     save.append(status,saveBtn);
     footer.append(add,save); body.appendChild(footer);
@@ -1027,11 +1055,11 @@ document.getElementById('addDayBtn').onclick=()=>{
 
 document.getElementById('individualTypeBtn').onclick=()=>{
   if(blockMode==='COMBINADO' && blockDraft.length && !confirm('¿Cambiar a ejercicio individual? Se vaciará la superserie que estás armando.')) return;
-  setBlockMode('INDIVIDUAL'); clearExerciseFields();
+  setBlockMode('INDIVIDUAL'); clearExerciseFields(); markEditorDirty();
 };
 document.getElementById('combinedTypeBtn').onclick=()=>{
   if(blockMode==='INDIVIDUAL' && selected && !confirm('¿Cambiar a superserie? Se limpiará el ejercicio que estabas cargando.')) return;
-  setBlockMode('COMBINADO'); clearExerciseFields();
+  setBlockMode('COMBINADO'); clearExerciseFields(); markEditorDirty();
 };
 document.getElementById('closeEditorBtn').onclick=()=>closeEditor(true);
 document.getElementById('cancelEditBtn').onclick=()=>closeEditor(true);
@@ -1045,6 +1073,18 @@ document.getElementById('search').addEventListener('input',e=>{
 });
 document.addEventListener('click',e=>{
   if(!e.target.closest('.search-wrap')) document.getElementById('results').style.display='none';
+});
+
+['series','trainerNote','reps','tempo','load'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el){
+    el.addEventListener('input',()=>{
+      if(editingBlockIndex!==null) markEditorDirty();
+    });
+    el.addEventListener('change',()=>{
+      if(editingBlockIndex!==null) markEditorDirty();
+    });
+  }
 });
 
 document.getElementById('addBtn').onclick=()=>{
@@ -1069,9 +1109,11 @@ document.getElementById('addBtn').onclick=()=>{
   if(editingDraftIndex!==null){
     blockDraft[editingDraftIndex]=ex;
     editingDraftIndex=null;
+    markEditorDirty();
   }else{
     if(blockDraft.length>=5){alert('El máximo es de 5 ejercicios por superserie.');return;}
     blockDraft.push(ex);
+    markEditorDirty();
   }
   clearExerciseFields(); renderDraft();
 };
@@ -1122,6 +1164,7 @@ async function submitRoutineRow(ex, block, token, day, versionId, flatOrder, blo
 }
 
 async function saveDay(day,btn,status){
+  if(!dirtyDays.has(day)) return;
   const blocks=routines[day];
   if(!blocks.length){
     status.textContent='Agregá al menos un ejercicio antes de guardar.';
