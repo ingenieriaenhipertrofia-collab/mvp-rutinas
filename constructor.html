@@ -80,18 +80,18 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
 .week-header{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;margin-bottom:14px}
 .week-title{margin:0;font-size:22px}
 .week-summary{font-size:13px;color:var(--muted)}
-.day-card{border:1px solid var(--line);border-radius:16px;background:#fff;margin-bottom:14px;overflow:hidden}
+.day-card{border:1px solid #d8dde3;border-radius:16px;background:#f3f5f7;margin-bottom:14px;overflow:hidden}
 .day-card.dirty{box-shadow:0 0 0 2px rgba(17,24,39,.08)}
-.day-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:15px 16px;background:#fafafa;border-bottom:1px solid var(--line)}
+.day-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:15px 16px;background:#e9edf1;border-bottom:1px solid #d8dde3}
 .day-head-left{display:flex;gap:10px;align-items:center;min-width:0}
 .day-name{font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .day-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .day-head-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.day-body{padding:14px}
+.day-body{padding:14px;background:#f3f5f7}
 .day-card.collapsed .day-body{display:none}
 .day-card.collapsed .day-head{border-bottom:none}
 .day-list{display:flex;flex-direction:column;gap:10px}
-.routine-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.routine-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px solid #dfe3e8;border-radius:12px;padding:12px;background:#fff}
 .routine-row.combined{border-left:4px solid #111827}
 .routine-main{min-width:0;flex:1}
 .routine-title{font-weight:800;font-size:15px}
@@ -99,7 +99,7 @@ button{border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:poin
 .routine-note{font-size:12px;background:#f5f6f8;border-radius:8px;padding:7px 9px;margin-top:7px;color:#4b5563}
 .routine-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .day-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
-.inline-editor{margin:12px 0 2px;border:1px solid #c7cdd5;border-radius:14px;padding:16px;background:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+.inline-editor{margin:12px 0 2px;border:1px solid #c4cbd3;border-radius:14px;padding:16px;background:#e3e8ed;box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
 .inline-editor h3{margin:0 0 12px}
 .inline-editor input,.inline-editor select,.inline-editor textarea{background:#fff}
 button:disabled{cursor:not-allowed;opacity:1}
@@ -108,6 +108,9 @@ button:disabled{cursor:not-allowed;opacity:1}
 .editor-section{margin-top:14px}
 .editor-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .day-add-btn{width:auto}
+.day-delete-btn{width:auto;background:transparent;color:#a33a3a;border:1px solid #ddbcbc;padding:10px 12px}
+.day-delete-btn:hover{background:#fff5f5}
+.day-footer-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .add-day-row{display:flex;justify-content:center;margin-top:14px}
 .rename-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:700px){
@@ -373,7 +376,7 @@ const DAY_NAMES_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSe__2n7_OjTUm_E
 const DAY_LABEL_CACHE_TTL_MS = 10 * 60 * 1000; // respaldo temporal por 10 minutos
 let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
-let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, dayNameRows=[], renamingDay=null, editorDirty=false;
+let editorContext=null, visibleDays=[], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, dayNameRows=[], renamingDay=null, editorDirty=false;
 let savingDays=new Set(), saveState={};
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
@@ -639,7 +642,7 @@ document.getElementById('deactivateStudentBtn').addEventListener('click',async()
   populateStudents('');
   closeModalById('managementModal');
   if(document.getElementById('student').value) loadCurrentRoutinesForStudent();
-  else { routines={A:[],B:[],C:[],D:[],E:[],F:[]}; visibleDays=['A']; renderWorkspace(); }
+  else { routines={A:[],B:[],C:[],D:[],E:[],F:[]}; visibleDays=[]; renderWorkspace(); }
 });
 
 document.getElementById('reactivateStudentBtn').addEventListener('click',async()=>{
@@ -743,7 +746,7 @@ function loadDayLabels(){
 function dayTitle(day){
   const cfg=dayLabels[day];
   if(!cfg || !cfg.name) return 'Día '+day;
-  return (cfg.type==='BLOQUE'?'Bloque':'Día')+' · '+cfg.name;
+  return cfg.type==='BLOQUE' ? 'Bloque · '+cfg.name : 'Día '+cfg.name;
 }
 async function persistDayLabel(day,type,name){
   const token=String(document.getElementById('student').value||'').trim();
@@ -803,7 +806,6 @@ function loadCurrentRoutinesForStudent(){
 
   routines=fresh;
   visibleDays=DAY_ORDER.filter(d=>routines[d].length);
-  if(!visibleDays.length) visibleDays=['A'];
   collapsedDays=new Set();
   dirtyDays=new Set();
   loadDayLabels();
@@ -1011,7 +1013,8 @@ async function moveBlock(day,i,dir){
 async function removeBlock(day,i){
   if(savingDays.has(day)) return;
   if(routines[day].length===1){
-    alert('Por ahora no conviene dejar un día completamente vacío porque la versión anterior seguiría siendo la vigente. Agregá otro ejercicio antes de quitar el último.');
+    if(!confirm('Este es el último ejercicio de '+dayTitle(day)+'. Si lo quitás, también se eliminará el día/bloque. ¿Continuar?')) return;
+    await deleteDay(day,true);
     return;
   }
   if(!confirm('¿Quitar este elemento de '+dayTitle(day)+'?')) return;
@@ -1039,7 +1042,6 @@ function renderWorkspace(){
   }
 
   visibleDays=DAY_ORDER.filter(d=>visibleDays.includes(d) || routines[d].length);
-  if(!visibleDays.length) visibleDays=['A'];
 
   const currentStudent=allKnownStudents().find(s=>String(s.token||'').trim()===token);
   const objective=String(currentStudent?.objetivo_principal||'').trim();
@@ -1048,6 +1050,9 @@ function renderWorkspace(){
     visibleDays.length+' día'+(visibleDays.length===1?'':'s');
 
   workspace.innerHTML='';
+  if(!visibleDays.length){
+    workspace.innerHTML='<div class="empty">Todavía no hay días o bloques cargados.</div>';
+  }
 
   visibleDays.forEach(day=>{
     const card=document.createElement('section');
@@ -1105,12 +1110,18 @@ function renderWorkspace(){
     body.appendChild(addSlot);
 
     const footer=document.createElement('div'); footer.className='day-footer';
+    const leftFooter=document.createElement('div'); leftFooter.className='day-footer-left';
     const add=document.createElement('button'); add.className='secondary day-add-btn'; add.textContent='＋ Agregar'; add.disabled=savingDays.has(day); add.onclick=()=>openEditor(day,null);
     const status=document.createElement('div'); status.className='save-status'; status.id='saveStatus-'+day;
     status.textContent=saveState[day]||'';
     if(saveState[day]==='✓ Guardado') status.classList.add('success');
     if(saveState[day] && saveState[day].startsWith('Error')) status.classList.add('danger-text');
-    footer.append(add,status); body.appendChild(footer);
+    leftFooter.append(add,status);
+    const deleteDayBtn=document.createElement('button'); deleteDayBtn.className='day-delete-btn'; deleteDayBtn.type='button';
+    deleteDayBtn.textContent='Eliminar día/bloque';
+    deleteDayBtn.disabled=savingDays.has(day);
+    deleteDayBtn.onclick=()=>deleteDay(day);
+    footer.append(leftFooter,deleteDayBtn); body.appendChild(footer);
 
     card.appendChild(body); workspace.appendChild(card);
   });
@@ -1272,6 +1283,70 @@ async function submitRoutineRow(ex, block, token, day, versionId, flatOrder, blo
   document.getElementById('sfOrdenEnBloque').value=innerOrder;
   document.getElementById('saveForm').submit();
   await sleep(450);
+}
+
+async function submitDayDeletion(token,day,versionId){
+  document.getElementById('sfToken').value=token;
+  document.getElementById('sfDia').value=day;
+  document.getElementById('sfVersion').value=versionId;
+  document.getElementById('sfOrden').value='1';
+  document.getElementById('sfIdEjercicio').value='__DAY_DELETED__';
+  document.getElementById('sfEjercicio').value='';
+  document.getElementById('sfSeries').value='';
+  document.getElementById('sfReps').value='';
+  document.getElementById('sfTempo').value='';
+  document.getElementById('sfCargaInicial').value='';
+  document.getElementById('sfNotaEntrenador').value='';
+  document.getElementById('sfBloqueId').value='__DAY_DELETED__';
+  document.getElementById('sfTipoBloque').value='ELIMINADO';
+  document.getElementById('sfOrdenBloque').value='1';
+  document.getElementById('sfOrdenEnBloque').value='1';
+  document.getElementById('saveForm').submit();
+  await sleep(500);
+}
+
+async function deleteDay(day,alreadyConfirmed=false){
+  if(savingDays.has(day)) return false;
+  const title=dayTitle(day);
+  if(!alreadyConfirmed && !confirm('¿Eliminar '+title+' completo? Se quitarán todos los ejercicios de este día/bloque.')) return false;
+
+  const token=document.getElementById('student').value;
+  const hadSavedContent=(routines[day]||[]).length>0;
+  savingDays.add(day);
+  saveState[day]='Eliminando…';
+  renderWorkspace();
+
+  try{
+    if(hadSavedContent){
+      const versionId=makeVersionId(token,day);
+      await submitDayDeletion(token,day,versionId);
+    }
+
+    currentRows=currentRows.filter(r=>!(
+      String(r.token||'').trim()===token &&
+      String(r.dia||'').trim().toUpperCase()===day
+    ));
+    routines[day]=[];
+    visibleDays=visibleDays.filter(d=>d!==day);
+    collapsedDays.delete(day);
+    closeEditor(false);
+
+    // También limpiamos el nombre visible para que, si el día se crea de nuevo,
+    // vuelva a empezar con su nombre predeterminado.
+    try{
+      await persistDayLabel(day,'DIA','');
+      delete dayLabels[day];
+    }catch(e){}
+
+    delete saveState[day];
+    return true;
+  }catch(e){
+    saveState[day]='Error al eliminar';
+    return false;
+  }finally{
+    savingDays.delete(day);
+    renderWorkspace();
+  }
 }
 
 async function commitDay(day){
