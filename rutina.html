@@ -221,7 +221,7 @@ body{
     <div class="topline">
       <div>
         <div class="eyebrow">Rutina</div>
-        <h2 id="studentName">Tu entrenamiento</h2>
+        <h2>Tu entrenamiento</h2>
       </div>
       <div id="summary" class="summary"></div>
     </div>
@@ -234,10 +234,9 @@ body{
 
 <script>
 const ROUTINES_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMHhQr9bZmTQkw67Aj7v5mRXRIC-T3tUfkO8sxtBgcYcXBid-mEV31OaBbUagrK8csm32ON9a0rVuX/pub?gid=339469399&single=true&output=csv';
+const ROUTINES_API = 'https://script.google.com/macros/s/AKfycbzOjyXStEHxg6G-qlYATcH7Po0tfrD6_ulcm0nBjxXqI8qA2-T0T0zJF4EKHS2xKgsu_w/exec';
 const EXERCISES_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=41200741&single=true&output=csv';
 const DAY_NAMES_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSosV9FXjIIj8qjK_UG5_SmH4_idZ0Fxo39TD4DPD1-DzRzsDYRFb7xGfu6OCSYrq5Ksi09RuWiAvtB/pub?gid=845125079&single=true&output=csv';
-const STUDENTS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=1888921254&single=true&output=csv';
-const NEW_STUDENTS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYAKol1CySnuHwPDVktKld_padRKy9F_ZYYogyDCkOz7hZkBFKCnxiYnej01QsUPPuhKjejEWWEQ/pub?gid=1004033237&single=true&output=csv';
 const DAY_ORDER=['A','B','C','D','E','F'];
 // Vista de rutina completa/PDF: no carga ni muestra intencion, sensacion ni error_evitar.
 
@@ -400,6 +399,30 @@ function renderRoutine(rows,labels){
       </section>`;
   }).join('');
 }
+
+async function loadRoutineRowsFast(){
+  try{
+    const sep=ROUTINES_API.includes('?')?'&':'?';
+    const res=await fetch(ROUTINES_API+sep+'t='+Date.now(),{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(!data || data.ok!==true || !Array.isArray(data.rows)){
+      throw new Error(data && data.error ? data.error : 'Respuesta inválida de la API');
+    }
+    return data.rows.map(row=>{
+      const out={};
+      Object.entries(row||{}).forEach(([k,v])=>out[normalizeHeader(k)]=String(v??'').trim());
+      return out;
+    });
+  }catch(e){
+    console.warn('API directa no disponible; usando CSV publicado como respaldo.',e);
+    const bust='&t='+Date.now();
+    const res=await fetch(ROUTINES_CSV+bust,{cache:'no-store'});
+    if(!res.ok) throw new Error('No se pudo cargar la rutina.');
+    return parseCSV(await res.text());
+  }
+}
+
 (async()=>{
   const loading=document.getElementById('loading');
   try{
@@ -407,34 +430,20 @@ function renderRoutine(rows,labels){
     if(!token) throw new Error('Falta el token de la rutina.');
 
     const bust='&t='+Date.now();
-    const [routineRes,libRes,namesRes,studentsRes,newStudentsRes]=await Promise.all([
-      fetch(ROUTINES_CSV+bust,{cache:'no-store'}),
+    const [allRoutineRows,libRes,namesRes]=await Promise.all([
+      loadRoutineRowsFast(),
       fetch(EXERCISES_CSV+bust,{cache:'no-store'}),
-      fetch(DAY_NAMES_CSV+bust,{cache:'no-store'}),
-      fetch(STUDENTS_CSV+bust,{cache:'no-store'}),
-      fetch(NEW_STUDENTS_CSV+bust,{cache:'no-store'})
+      fetch(DAY_NAMES_CSV+bust,{cache:'no-store'})
     ]);
-    const routineText=await routineRes.text();
     const libText=await libRes.text();
     const namesText=await namesRes.text();
-    const studentsText=await studentsRes.text();
-    const newStudentsText=await newStudentsRes.text();
 
-    const routineRows=parseCSV(routineText)
+    const routineRows=allRoutineRows
       .filter(r=>String(r.token||'').trim()===token && r.dia && r.ejercicio);
     if(!routineRows.length) throw new Error('No hay una rutina vigente para este enlace.');
 
     const rows=enrich(routineRows,parseCSV(libText));
     const labels=buildDayLabels(parseCSV(namesText),token);
-
-    const baseStudents=parseCSV(studentsText);
-    const createdStudents=parseCSV(newStudentsText);
-    const allStudents=[...baseStudents,...createdStudents];
-    const student=[...allStudents].reverse().find(s=>String(s.token||'').trim()===token);
-    if(student && String(student.nombre||'').trim()){
-      document.getElementById('studentName').textContent=String(student.nombre).trim();
-    }
-
     loading.style.display='none';
     renderRoutine(rows,labels);
   }catch(e){
