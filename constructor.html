@@ -368,9 +368,11 @@ const CURRENT_ROUTINES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 const STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQq0vsM4pdfnzXMvN0WlceU4Tno44ttI_Xs4EPME_RpJuTbFwwx5aZx7v97wZs1BhLDu7TN5i1hCatY/pub?gid=1888921254&single=true&output=csv";
 const NEW_STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYAKol1CySnuHwPDVktKld_padRKy9F_ZYYogyDCkOz7hZkBFKCnxiYnej01QsUPPuhKjejEWWEQ/pub?gid=1004033237&single=true&output=csv";
 const STUDENT_STATE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7BPBIklMyjNK_GcJ1K0slb_JW0fkU7B82AutWkglCb8d5UmiKDaiW4urPmtCxGTXANdIB0Z21l1kO/pub?gid=1659100872&single=true&output=csv";
+const DAY_NAMES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSosV9FXjIIj8qjK_UG5_SmH4_idZ0Fxo39TD4DPD1-DzRzsDYRFb7xGfu6OCSYrq5Ksi09RuWiAvtB/pub?gid=845125079&single=true&output=csv";
+const DAY_NAMES_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSe__2n7_OjTUm_Ehxx8-RLcPzFG17FD2cr6QjX5pI4vS9u8hQ/formResponse";
 let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
-let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, renamingDay=null, editorDirty=false;
+let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, dayNameRows=[], renamingDay=null, editorDirty=false;
 let savingDays=new Set(), saveState={};
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
@@ -664,22 +666,42 @@ function normalizeType(v){
   return String(v||'').trim().toUpperCase()==='COMBINADO' ? 'COMBINADO' : 'INDIVIDUAL';
 }
 
-function labelStorageKey(){
-  const token=document.getElementById('student').value || 'sin-token';
-  return 'ii_day_labels_'+token;
-}
 function loadDayLabels(){
-  try{ dayLabels=JSON.parse(localStorage.getItem(labelStorageKey())||'{}')||{}; }
-  catch(e){ dayLabels={}; }
-}
-function saveDayLabels(){
-  try{ localStorage.setItem(labelStorageKey(),JSON.stringify(dayLabels)); }catch(e){}
+  const token=String(document.getElementById('student').value||'').trim();
+  dayLabels={};
+  dayNameRows.forEach(r=>{
+    if(String(r.token||'').trim()!==token) return;
+    const day=String(r.dia_id||r.dia||'').trim().toUpperCase();
+    if(!DAY_ORDER.includes(day)) return;
+    const name=String(r.nombre_visible||'').trim();
+    const type=String(r.tipo_nombre||'DIA').trim().toUpperCase()==='BLOQUE'?'BLOQUE':'DIA';
+    if(name) dayLabels[day]={type,name};
+    else delete dayLabels[day];
+  });
 }
 function dayTitle(day){
   const cfg=dayLabels[day];
   if(!cfg || !cfg.name) return 'Día '+day;
   return (cfg.type==='BLOQUE'?'Bloque':'Día')+' · '+cfg.name;
 }
+async function persistDayLabel(day,type,name){
+  const token=String(document.getElementById('student').value||'').trim();
+  if(!token) throw new Error('No hay alumna seleccionada.');
+  const body=new URLSearchParams({
+    'entry.1093461246':token,
+    'entry.1373914533':day,
+    'entry.582279446':type,
+    'entry.200056580':name
+  });
+  await fetch(DAY_NAMES_FORM,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:body.toString()
+  });
+  dayNameRows.push({token,dia_id:day,tipo_nombre:type,nombre_visible:name});
+}
+
 
 function loadCurrentRoutinesForStudent(){
   const token=document.getElementById('student').value;
@@ -1047,14 +1069,26 @@ function openRenameDay(day){
 }
 document.getElementById('closeRenameDayModal').onclick=()=>closeModalById('renameDayModal');
 document.getElementById('cancelRenameDayBtn').onclick=()=>closeModalById('renameDayModal');
-document.getElementById('saveRenameDayBtn').onclick=()=>{
+document.getElementById('saveRenameDayBtn').onclick=async()=>{
   if(!renamingDay) return;
+  const day=renamingDay;
   const name=document.getElementById('dayLabelName').value.trim();
   const type=document.getElementById('dayLabelType').value;
-  if(name) dayLabels[renamingDay]={type,name}; else delete dayLabels[renamingDay];
-  saveDayLabels();
-  closeModalById('renameDayModal');
-  renderWorkspace();
+  const btn=document.getElementById('saveRenameDayBtn');
+  const original=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Guardando…';
+  try{
+    await persistDayLabel(day,type,name);
+    if(name) dayLabels[day]={type,name}; else delete dayLabels[day];
+    closeModalById('renameDayModal');
+    renderWorkspace();
+  }catch(e){
+    alert('No se pudo guardar el nombre del día.');
+  }finally{
+    btn.disabled=false;
+    btn.textContent=original;
+  }
 };
 
 document.getElementById('addDayBtn').onclick=()=>{
@@ -1230,12 +1264,13 @@ async function commitDay(day){
 (async()=>{
   try{
     const bust='&t='+Date.now();
-    const [exRes, currentRes, studentsRes, newStudentsRes, stateRes]=await Promise.all([
+    const [exRes, currentRes, studentsRes, newStudentsRes, stateRes, dayNamesRes]=await Promise.all([
       fetch(CSV_URL+bust,{cache:'no-store'}),
       fetch(CURRENT_ROUTINES_CSV+bust,{cache:'no-store'}),
       fetch(STUDENTS_CSV+bust,{cache:'no-store'}),
       fetch(NEW_STUDENTS_CSV+bust,{cache:'no-store'}),
-      fetch(STUDENT_STATE_CSV+bust,{cache:'no-store'})
+      fetch(STUDENT_STATE_CSV+bust,{cache:'no-store'}),
+      fetch(DAY_NAMES_CSV+bust,{cache:'no-store'})
     ]);
 
     exercises=parseCSV(await exRes.text()).filter(x=>x.ejercicio);
@@ -1247,6 +1282,7 @@ async function commitDay(day){
     }));
     students=[...baseStudents,...createdStudents];
     studentStates=parseCSV(await stateRes.text());
+    dayNameRows=parseCSV(await dayNamesRes.text());
 
     populateStudents();
 
