@@ -425,6 +425,33 @@ async function loadRoutineRowsFast(){
   }
 }
 
+
+async function loadStudentNameOptional(token){
+  try{
+    const bust='&t='+Date.now();
+    const results=await Promise.allSettled([
+      fetch(STUDENTS_CSV+bust,{cache:'no-store'}),
+      fetch(NEW_STUDENTS_CSV+bust,{cache:'no-store'})
+    ]);
+
+    const all=[];
+    for(const r of results){
+      if(r.status!=='fulfilled') continue;
+      try{
+        const txt=await r.value.text();
+        all.push(...parseCSV(txt));
+      }catch(e){}
+    }
+
+    const student=[...all].reverse().find(s=>String(s.token||'').trim()===token);
+    if(student && String(student.nombre||'').trim()){
+      document.getElementById('studentName').textContent=String(student.nombre).trim();
+    }
+  }catch(e){
+    console.warn('No se pudo cargar el nombre de la alumna; la rutina seguirá funcionando.',e);
+  }
+}
+
 (async()=>{
   const loading=document.getElementById('loading');
   try{
@@ -432,17 +459,13 @@ async function loadRoutineRowsFast(){
     if(!token) throw new Error('Falta el token de la rutina.');
 
     const bust='&t='+Date.now();
-    const [allRoutineRows,libRes,namesRes,studentsRes,newStudentsRes]=await Promise.all([
+    const [allRoutineRows,libRes,namesRes]=await Promise.all([
       loadRoutineRowsFast(),
       fetch(EXERCISES_CSV+bust,{cache:'no-store'}),
-      fetch(DAY_NAMES_CSV+bust,{cache:'no-store'}),
-      fetch(STUDENTS_CSV+bust,{cache:'no-store'}),
-      fetch(NEW_STUDENTS_CSV+bust,{cache:'no-store'})
+      fetch(DAY_NAMES_CSV+bust,{cache:'no-store'})
     ]);
     const libText=await libRes.text();
     const namesText=await namesRes.text();
-    const studentsText=await studentsRes.text();
-    const newStudentsText=await newStudentsRes.text();
 
     const routineRows=allRoutineRows
       .filter(r=>String(r.token||'').trim()===token && r.dia && r.ejercicio);
@@ -450,17 +473,9 @@ async function loadRoutineRowsFast(){
 
     const rows=enrich(routineRows,parseCSV(libText));
     const labels=buildDayLabels(parseCSV(namesText),token);
-
-    const baseStudents=parseCSV(studentsText);
-    const createdStudents=parseCSV(newStudentsText);
-    const allStudents=[...baseStudents,...createdStudents];
-    const student=[...allStudents].reverse().find(s=>String(s.token||'').trim()===token);
-    if(student && String(student.nombre||'').trim()){
-      document.getElementById('studentName').textContent=String(student.nombre).trim();
-    }
-
     loading.style.display='none';
     renderRoutine(rows,labels);
+    loadStudentNameOptional(token);
   }catch(e){
     loading.className='error';
     loading.textContent='No se pudo cargar la rutina: '+e.message;
