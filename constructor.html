@@ -12,6 +12,7 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-ser
 .header h1{margin:0;font-size:22px}.header p{margin:5px 0 0;opacity:.75;font-size:14px}
 .wrap{max-width:860px;margin:28px auto;padding:0 16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.04);margin-bottom:18px}
+.student-context-card{background:#eef1f4;border-color:#d8dde3;box-shadow:none}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}}
 label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
@@ -114,6 +115,7 @@ button:disabled{cursor:not-allowed;opacity:1}
 .add-day-row{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
 .routine-save-indicator{font-size:13px;font-weight:700;color:#5f6b63;display:flex;align-items:center;gap:6px}
 .routine-save-indicator.saving{color:#7a6f55}
+.routine-save-indicator.pending{color:#7b6b45}
 .super-top-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
 .super-exercises{display:flex;flex-direction:column;gap:12px;margin-top:16px}
 .super-ex-card{background:#fff;border:1px solid #d7dde4;border-radius:12px;padding:14px}
@@ -139,7 +141,7 @@ button:disabled{cursor:not-allowed;opacity:1}
 </div>
 
 <div class="wrap">
-  <div class="card">
+  <div class="card student-context-card">
     <div>
       <label>Alumna</label>
       <select id="student">
@@ -407,6 +409,8 @@ let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, 
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
 let editorContext=null, visibleDays=[], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, dayNameRows=[], renamingDay=null, editorDirty=false;
 let savingDays=new Set(), saveState={}, routineMetaSaving=false;
+let reorderTimers=new Map(), pendingReorderDays=new Set(), savedDaySignatures={};
+let loadedStudentToken='';
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function splitLine(line){
@@ -687,6 +691,66 @@ document.getElementById('reactivateStudentBtn').addEventListener('click',async()
 
 const DAY_ORDER=['A','B','C','D','E','F'];
 
+function daySignature(day){
+  const blocks=routines[day]||[];
+  return JSON.stringify(blocks.map(block=>({
+    bloque_id:String(block.bloque_id||''),
+    tipo_bloque:String(block.tipo_bloque||'INDIVIDUAL'),
+    series:String(block.series||''),
+    nota_entrenador:String(block.nota_entrenador||''),
+    exercises:(block.exercises||[]).map(ex=>({
+      id_ejercicio:String(ex.id_ejercicio||''),
+      ejercicio:String(ex.ejercicio||''),
+      reps:String(ex.reps||''),
+      tempo:String(ex.tempo||''),
+      load:String(ex.load||'')
+    }))
+  })));
+}
+
+function hasPendingSaves(){
+  return pendingReorderDays.size>0 || savingDays.size>0 || routineMetaSaving;
+}
+
+function cancelReorderTimer(day){
+  const timer=reorderTimers.get(day);
+  if(timer) clearTimeout(timer);
+  reorderTimers.delete(day);
+}
+
+function scheduleReorderSave(day){
+  cancelReorderTimer(day);
+  pendingReorderDays.add(day);
+  saveState[day]='Cambios pendientes…';
+  renderWorkspace();
+
+  const timer=setTimeout(async()=>{
+    reorderTimers.delete(day);
+    pendingReorderDays.delete(day);
+    await commitDay(day);
+  },1800);
+  reorderTimers.set(day,timer);
+}
+
+async function flushPendingDay(day){
+  if(!pendingReorderDays.has(day)) return true;
+  cancelReorderTimer(day);
+  pendingReorderDays.delete(day);
+  return await commitDay(day);
+}
+
+async function flushAllPending(){
+  const days=[...pendingReorderDays];
+  for(const day of days){
+    const ok=await flushPendingDay(day);
+    if(ok===false && savedDaySignatures[day]!==daySignature(day)) return false;
+  }
+  while(savingDays.size>0){
+    await sleep(80);
+  }
+  return true;
+}
+
 function currentDay(){
   return editorContext?.day || visibleDays[0] || 'A';
 }
@@ -799,6 +863,7 @@ async function persistDayLabel(day,type,name){
 
 function loadCurrentRoutinesForStudent(){
   const token=document.getElementById('student').value;
+  loadedStudentToken=token;
   const fresh={A:[],B:[],C:[],D:[],E:[],F:[]};
   const rows=currentRows
     .filter(r=>String(r.token||'').trim()===token)
@@ -837,6 +902,13 @@ function loadCurrentRoutinesForStudent(){
   visibleDays=DAY_ORDER.filter(d=>routines[d].length);
   collapsedDays=new Set();
   dirtyDays=new Set();
+  reorderTimers.forEach(timer=>clearTimeout(timer));
+  reorderTimers.clear();
+  pendingReorderDays.clear();
+  savedDaySignatures={};
+  DAY_ORDER.forEach(d=>{
+    if(routines[d].length) savedDaySignatures[d]=daySignature(d);
+  });
   loadDayLabels();
   closeEditor(false);
   renderWorkspace();
@@ -1006,7 +1078,11 @@ function renderDraft(){
 function editDraftExercise(i){}
 
 
-function openEditor(day,index=null){
+async function openEditor(day,index=null){
+  if(pendingReorderDays.has(day)){
+    const ok=await flushPendingDay(day);
+    if(ok===false) return;
+  }
   collapsedDays.delete(day);
   if(!document.getElementById('day-body-'+day)) renderWorkspace();
 
@@ -1075,18 +1151,22 @@ function currentExerciseEntry(){
   };
 }
 
-async function moveBlock(day,i,dir){
+function moveBlock(day,i,dir){
   if(savingDays.has(day)) return;
   const list=routines[day];
   const j=i+dir;
   if(j<0||j>=list.length) return;
   [list[i],list[j]]=[list[j],list[i]];
   closeEditor(false);
-  await commitDay(day);
+  scheduleReorderSave(day);
 }
 
 async function removeBlock(day,i){
   if(savingDays.has(day)) return;
+  if(pendingReorderDays.has(day)){
+    const ok=await flushPendingDay(day);
+    if(ok===false) return;
+  }
   if(routines[day].length===1){
     if(!confirm('Este es el último ejercicio de '+dayTitle(day)+'. Si lo quitás, también se eliminará el día/bloque. ¿Continuar?')) return;
     await deleteDay(day,true);
@@ -1112,8 +1192,10 @@ function renderWorkspace(){
   const globalIndicator=document.getElementById('routineSaveIndicator');
   if(globalIndicator){
     const isSaving=savingDays.size>0 || routineMetaSaving;
-    globalIndicator.textContent=isSaving?'Guardando…':'✓ Rutina guardada';
+    const isPending=pendingReorderDays.size>0;
+    globalIndicator.textContent=isSaving?'Guardando…':(isPending?'Cambios pendientes…':'✓ Rutina guardada');
     globalIndicator.classList.toggle('saving',isSaving);
+    globalIndicator.classList.toggle('pending',!isSaving && isPending);
   }
   if(!token){
     workspace.innerHTML='<div class="empty">Seleccioná una alumna.</div>';
@@ -1128,7 +1210,7 @@ function renderWorkspace(){
   const objective=String(currentStudent?.objetivo_principal||'').trim();
   document.getElementById('studentObjective').textContent=objective?'Objetivo: '+objective:'';
   document.getElementById('weekSummary').textContent=
-    visibleDays.length+' día'+(visibleDays.length===1?'':'s');
+    visibleDays.length+' día'+(visibleDays.length===1?'':'s')+'/semana';
 
   workspace.innerHTML='';
   if(!visibleDays.length){
@@ -1192,7 +1274,10 @@ function renderWorkspace(){
 
     const footer=document.createElement('div'); footer.className='day-footer';
     const leftFooter=document.createElement('div'); leftFooter.className='day-footer-left';
-    const add=document.createElement('button'); add.className='secondary day-add-btn'; add.textContent='＋ Agregar'; add.disabled=savingDays.has(day); add.onclick=()=>openEditor(day,null);
+    const add=document.createElement('button'); add.className='secondary day-add-btn'; add.textContent='＋ Agregar E/S';
+    add.title='Agregar ejercicio o superserie';
+    add.disabled=savingDays.has(day);
+    add.onclick=()=>openEditor(day,null);
     const status=document.createElement('div'); status.className='save-status'; status.id='saveStatus-'+day;
     status.textContent=saveState[day]||'';
     if(saveState[day]==='✓ Guardado') status.classList.add('success');
@@ -1213,7 +1298,11 @@ function renderWorkspace(){
   addDay.textContent=next?'＋ Agregar día':'Máximo 6 días';
 }
 
-function openRenameDay(day){
+async function openRenameDay(day){
+  if(pendingReorderDays.has(day)){
+    const ok=await flushPendingDay(day);
+    if(ok===false) return;
+  }
   renamingDay=day;
   const cfg=dayLabels[day]||{type:'DIA',name:''};
   document.getElementById('dayLabelType').value=cfg.type||'DIA';
@@ -1249,7 +1338,9 @@ document.getElementById('saveRenameDayBtn').onclick=async()=>{
   }
 };
 
-document.getElementById('addDayBtn').onclick=()=>{
+document.getElementById('addDayBtn').onclick=async()=>{
+  const ok=await flushAllPending();
+  if(ok===false) return;
   const next=DAY_ORDER.find(d=>!visibleDays.includes(d));
   if(!next){alert('Ya están visibles los 6 días disponibles.');return;}
   visibleDays.push(next); visibleDays.sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
@@ -1363,7 +1454,20 @@ document.getElementById('addBtn').onclick=async()=>{
 };
 document.getElementById('finishBlockBtn').onclick=()=>{};
 
-document.getElementById('student').addEventListener('change',()=>loadCurrentRoutinesForStudent());
+document.getElementById('student').addEventListener('change',async(e)=>{
+  const newToken=e.target.value;
+  if(loadedStudentToken && newToken!==loadedStudentToken){
+    // Volvemos temporalmente al token cargado para guardar con la identidad correcta.
+    e.target.value=loadedStudentToken;
+    const ok=await flushAllPending();
+    if(ok===false){
+      alert('No se pudo completar un guardado pendiente. Seguí en la alumna actual y volvé a intentar.');
+      return;
+    }
+    e.target.value=newToken;
+  }
+  loadCurrentRoutinesForStudent();
+});
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function makeVersionId(token,day){
@@ -1415,10 +1519,14 @@ async function submitDayDeletion(token,day,versionId){
 
 async function deleteDay(day,alreadyConfirmed=false){
   if(savingDays.has(day)) return false;
+  if(pendingReorderDays.has(day)){
+    const ok=await flushPendingDay(day);
+    if(ok===false) return false;
+  }
   const title=dayTitle(day);
   if(!alreadyConfirmed && !confirm('¿Eliminar '+title+' completo? Se quitarán todos los ejercicios de este día/bloque.')) return false;
 
-  const token=document.getElementById('student').value;
+  const token=loadedStudentToken || document.getElementById('student').value;
   const hadSavedContent=(routines[day]||[]).length>0;
   savingDays.add(day);
   saveState[day]='Eliminando…';
@@ -1435,6 +1543,9 @@ async function deleteDay(day,alreadyConfirmed=false){
       String(r.dia||'').trim().toUpperCase()===day
     ));
     routines[day]=[];
+    delete savedDaySignatures[day];
+    cancelReorderTimer(day);
+    pendingReorderDays.delete(day);
     visibleDays=visibleDays.filter(d=>d!==day);
     collapsedDays.delete(day);
     closeEditor(false);
@@ -1462,7 +1573,23 @@ async function commitDay(day){
   const blocks=routines[day];
   if(!blocks.length) return false;
 
-  const token=document.getElementById('student').value;
+  cancelReorderTimer(day);
+  pendingReorderDays.delete(day);
+
+  const currentSignature=daySignature(day);
+  if(savedDaySignatures[day]===currentSignature){
+    saveState[day]='✓ Sin cambios';
+    renderWorkspace();
+    setTimeout(()=>{
+      if(saveState[day]==='✓ Sin cambios'){
+        saveState[day]='';
+        renderWorkspace();
+      }
+    },1200);
+    return true;
+  }
+
+  const token=loadedStudentToken || document.getElementById('student').value;
   const versionId=makeVersionId(token,day);
   savingDays.add(day);
   saveState[day]='Guardando…';
@@ -1487,6 +1614,7 @@ async function commitDay(day){
       orden_bloque:String(bi+1),orden_en_bloque:String(ei+1)
     })));
 
+    savedDaySignatures[day]=currentSignature;
     dirtyDays.delete(day);
     saveState[day]='✓ Guardado';
     return true;
