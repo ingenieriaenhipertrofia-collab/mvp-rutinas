@@ -370,6 +370,7 @@ const NEW_STUDENTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRonYA
 const STUDENT_STATE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7BPBIklMyjNK_GcJ1K0slb_JW0fkU7B82AutWkglCb8d5UmiKDaiW4urPmtCxGTXANdIB0Z21l1kO/pub?gid=1659100872&single=true&output=csv";
 const DAY_NAMES_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSosV9FXjIIj8qjK_UG5_SmH4_idZ0Fxo39TD4DPD1-DzRzsDYRFb7xGfu6OCSYrq5Ksi09RuWiAvtB/pub?gid=845125079&single=true&output=csv";
 const DAY_NAMES_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSe__2n7_OjTUm_Ehxx8-RLcPzFG17FD2cr6QjX5pI4vS9u8hQ/formResponse";
+const DAY_LABEL_CACHE_TTL_MS = 10 * 60 * 1000; // respaldo temporal por 10 minutos
 let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
 let editorContext=null, visibleDays=['A'], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, dayNameRows=[], renamingDay=null, editorDirty=false;
@@ -666,16 +667,76 @@ function normalizeType(v){
   return String(v||'').trim().toUpperCase()==='COMBINADO' ? 'COMBINADO' : 'INDIVIDUAL';
 }
 
+function dayLabelCacheKey(token){
+  return 'ii_day_label_cache_'+String(token||'').trim();
+}
+function readDayLabelCache(token){
+  try{
+    const raw=JSON.parse(localStorage.getItem(dayLabelCacheKey(token))||'{}')||{};
+    const now=Date.now();
+    const clean={};
+    Object.entries(raw).forEach(([day,item])=>{
+      if(!item || !item.savedAt) return;
+      if(now-Number(item.savedAt)>DAY_LABEL_CACHE_TTL_MS) return;
+      clean[day]=item;
+    });
+    if(Object.keys(clean).length) localStorage.setItem(dayLabelCacheKey(token),JSON.stringify(clean));
+    else localStorage.removeItem(dayLabelCacheKey(token));
+    return clean;
+  }catch(e){
+    return {};
+  }
+}
+function writeDayLabelCache(token,day,type,name){
+  try{
+    const current=readDayLabelCache(token);
+    current[day]={type,name,savedAt:Date.now()};
+    localStorage.setItem(dayLabelCacheKey(token),JSON.stringify(current));
+  }catch(e){}
+}
+function clearConfirmedDayLabelCache(token,confirmedLabels){
+  try{
+    const current=readDayLabelCache(token);
+    let changed=false;
+    Object.keys(current).forEach(day=>{
+      const cached=current[day];
+      const confirmed=confirmedLabels[day];
+      const sameName=String(cached?.name||'')===String(confirmed?.name||'');
+      const sameType=String(cached?.type||'DIA')===String(confirmed?.type||'DIA');
+      if(sameName && sameType){
+        delete current[day];
+        changed=true;
+      }
+    });
+    if(changed){
+      if(Object.keys(current).length) localStorage.setItem(dayLabelCacheKey(token),JSON.stringify(current));
+      else localStorage.removeItem(dayLabelCacheKey(token));
+    }
+    return current;
+  }catch(e){
+    return {};
+  }
+}
 function loadDayLabels(){
   const token=String(document.getElementById('student').value||'').trim();
-  dayLabels={};
+  const confirmed={};
   dayNameRows.forEach(r=>{
     if(String(r.token||'').trim()!==token) return;
     const day=String(r.dia_id||r.dia||'').trim().toUpperCase();
     if(!DAY_ORDER.includes(day)) return;
     const name=String(r.nombre_visible||'').trim();
     const type=String(r.tipo_nombre||'DIA').trim().toUpperCase()==='BLOQUE'?'BLOQUE':'DIA';
-    if(name) dayLabels[day]={type,name};
+    if(name) confirmed[day]={type,name};
+    else delete confirmed[day];
+  });
+
+  dayLabels={...confirmed};
+
+  // Si el CSV publicado todavía no reflejó un cambio recién guardado,
+  // usamos por unos minutos la copia local como respaldo visual.
+  const pendingCache=clearConfirmedDayLabelCache(token,confirmed);
+  Object.entries(pendingCache).forEach(([day,item])=>{
+    if(item.name) dayLabels[day]={type:item.type||'DIA',name:item.name};
     else delete dayLabels[day];
   });
 }
@@ -699,6 +760,7 @@ async function persistDayLabel(day,type,name){
     headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:body.toString()
   });
+  writeDayLabelCache(token,day,type,name);
   dayNameRows.push({token,dia_id:day,tipo_nombre:type,nombre_visible:name});
 }
 
