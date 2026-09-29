@@ -111,7 +111,15 @@ button:disabled{cursor:not-allowed;opacity:1}
 .day-delete-btn{width:auto;background:transparent;color:#a33a3a;border:1px solid #ddbcbc;padding:10px 12px}
 .day-delete-btn:hover{background:#fff5f5}
 .day-footer-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.add-day-row{display:flex;justify-content:center;margin-top:14px}
+.add-day-row{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.routine-save-indicator{font-size:13px;font-weight:700;color:#5f6b63;display:flex;align-items:center;gap:6px}
+.routine-save-indicator.saving{color:#7a6f55}
+.super-top-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.super-exercises{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.super-ex-card{background:#fff;border:1px solid #d7dde4;border-radius:12px;padding:14px}
+.super-ex-title{font-weight:800;margin-bottom:12px}
+.super-ex-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:700px){.super-top-grid,.super-ex-grid{grid-template-columns:1fr}}
 .rename-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:700px){
   .week-header{align-items:flex-start;flex-direction:column}
@@ -155,6 +163,7 @@ button:disabled{cursor:not-allowed;opacity:1}
     <div id="routineWorkspace"></div>
     <div class="add-day-row">
       <button id="addDayBtn" class="secondary" type="button">＋ Agregar día</button>
+      <div id="routineSaveIndicator" class="routine-save-indicator">✓ Rutina guardada</div>
     </div>
   </div>
 
@@ -182,64 +191,84 @@ button:disabled{cursor:not-allowed;opacity:1}
       <div id="lockedExerciseName" style="font-size:20px;font-weight:800;margin-top:3px"></div>
     </div>
 
-    <div id="exerciseSelectSection">
-      <div class="builder-head">
-        <div>
-          <b id="exerciseBuilderTitle">Ejercicio</b>
-          <div class="small">Seleccionar un ejercicio de la biblioteca</div>
+    <div id="individualEditorSection">
+      <div id="exerciseSelectSection">
+        <div class="builder-head">
+          <div>
+            <b>Ejercicio</b>
+            <div class="small">Seleccionar un ejercicio de la biblioteca</div>
+          </div>
         </div>
-        <span id="draftCount" class="badge" style="display:none">0 / 5</span>
+
+        <label>Buscar ejercicio</label>
+        <div class="search-wrap">
+          <input id="search" placeholder="Ej.: Hack, remo, jalón…" autocomplete="off">
+          <div id="results" class="results"></div>
+        </div>
+
+        <div id="preview" class="exercise-preview">
+          <b id="previewName"></b>
+          <div id="previewMeta" class="small"></div>
+        </div>
       </div>
 
-      <label>Buscar ejercicio</label>
-      <div class="search-wrap">
-        <input id="search" placeholder="Ej.: Hack, remo, jalón…" autocomplete="off">
-        <div id="results" class="results"></div>
-      </div>
-
-      <div id="preview" class="exercise-preview">
-        <b id="previewName"></b>
-        <div id="previewMeta" class="small"></div>
+      <div class="editor-section">
+        <div class="grid">
+          <div>
+            <label>Series</label>
+            <input id="series" type="number" min="1" max="10" value="3">
+          </div>
+          <div>
+            <label>Repeticiones</label>
+            <input id="reps" placeholder="Ej.: 8-12">
+          </div>
+          <div>
+            <label>Tempo</label>
+            <input id="tempo" placeholder="Ej.: 1-0-3-1">
+          </div>
+          <div>
+            <label>Carga inicial</label>
+            <input id="load" placeholder="Ej.: 20 kg">
+          </div>
+          <div class="full">
+            <label>Indicaciones para la alumna</label>
+            <textarea id="trainerNote" placeholder="Ej.: Última serie cerca del fallo."></textarea>
+            <div class="small" style="margin-top:6px">Opcional.</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="editor-section">
-      <div class="grid">
+    <div id="superEditorSection" style="display:none">
+      <div class="super-top-grid">
         <div>
-          <label id="seriesLabel">Series</label>
-          <input id="series" type="number" min="1" max="10" value="3">
+          <label>Cantidad de ejercicios</label>
+          <select id="superExerciseCount">
+            <option value="2">2 ejercicios</option>
+            <option value="3">3 ejercicios</option>
+            <option value="4">4 ejercicios</option>
+            <option value="5">5 ejercicios</option>
+          </select>
         </div>
         <div>
-          <label>Repeticiones</label>
-          <input id="reps" placeholder="Ej.: 8-12">
-        </div>
-        <div>
-          <label>Tempo</label>
-          <input id="tempo" placeholder="Ej.: 1-0-3-1">
-        </div>
-        <div>
-          <label>Carga inicial</label>
-          <input id="load" placeholder="Ej.: 20 kg">
-        </div>
-        <div class="full">
-          <label>Indicaciones para la alumna</label>
-          <textarea id="trainerNote" placeholder="Ej.: Última serie cerca del fallo."></textarea>
-          <div class="small" id="noteHelp" style="margin-top:6px">Opcional.</div>
+          <label>Número de vueltas</label>
+          <input id="superRounds" type="number" min="1" max="10" value="3">
         </div>
       </div>
-    </div>
 
-    <div id="draftWrap" style="display:none">
-      <div class="builder-head">
-        <b>Ejercicios de la superserie</b>
-        <span class="small">Mínimo 2 · máximo 5</span>
+      <datalist id="superExerciseOptions"></datalist>
+      <div id="superExercisesContainer" class="super-exercises"></div>
+
+      <div class="editor-section">
+        <label>Indicaciones para la alumna sobre la superserie</label>
+        <textarea id="superNote" placeholder="Ej.: Sin descanso entre ejercicios. Descansá 90 s al completar cada vuelta."></textarea>
+        <div class="small" style="margin-top:6px">Opcional · se mostrará una sola vez para toda la superserie.</div>
       </div>
-      <div id="draftList" class="draft-list"></div>
     </div>
 
     <div class="actions">
       <button id="cancelEditBtn" class="secondary" type="button">Cancelar</button>
-      <button id="finishBlockBtn" class="secondary" type="button" style="display:none">Agregar superserie</button>
+      <button id="finishBlockBtn" type="button" style="display:none"></button>
       <button id="addBtn" class="primary" type="button">Agregar ejercicio</button>
     </div>
   </div>
@@ -377,7 +406,7 @@ const DAY_LABEL_CACHE_TTL_MS = 10 * 60 * 1000; // respaldo temporal por 10 minut
 let exercises=[], currentRows=[], students=[], studentStates=[], selected=null, routines={A:[],B:[],C:[],D:[],E:[],F:[]};
 let blockMode='INDIVIDUAL', blockDraft=[], editingBlockIndex=null, editingDraftIndex=null;
 let editorContext=null, visibleDays=[], collapsedDays=new Set(), dirtyDays=new Set(), dayLabels={}, dayNameRows=[], renamingDay=null, editorDirty=false;
-let savingDays=new Set(), saveState={};
+let savingDays=new Set(), saveState={}, routineMetaSaving=false;
 
 function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function splitLine(line){
@@ -820,6 +849,10 @@ function parkEditor(){
   if(panel) panel.style.display='none';
 }
 
+function escapeHtml(v){
+  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function clearExerciseFields(){
   selected=null;
   editingDraftIndex=null;
@@ -836,6 +869,9 @@ function resetBuilderFields(){
   editingDraftIndex=null;
   document.getElementById('series').value='3';
   document.getElementById('trainerNote').value='';
+  document.getElementById('superExerciseCount').value='2';
+  document.getElementById('superRounds').value='3';
+  document.getElementById('superNote').value='';
   setBlockMode('INDIVIDUAL',true);
   clearExerciseFields();
 }
@@ -856,79 +892,119 @@ function markEditorDirty(){
   updateBuilderButtons();
 }
 
+function populateSuperExerciseOptions(){
+  const list=document.getElementById('superExerciseOptions');
+  if(!list) return;
+  list.innerHTML='';
+  exercises.forEach(ex=>{
+    const option=document.createElement('option');
+    option.value=ex.ejercicio;
+    list.appendChild(option);
+  });
+}
+
+function renderSuperExerciseFields(){
+  const count=Math.max(2,Math.min(5,Number(document.getElementById('superExerciseCount').value)||2));
+  const box=document.getElementById('superExercisesContainer');
+  if(!box) return;
+
+  while(blockDraft.length<count) blockDraft.push({id_ejercicio:'',ejercicio:'',reps:'',tempo:'',load:''});
+  if(blockDraft.length>count) blockDraft=blockDraft.slice(0,count);
+
+  box.innerHTML='';
+  blockDraft.forEach((ex,i)=>{
+    const card=document.createElement('div');
+    card.className='super-ex-card';
+    card.innerHTML=`
+      <div class="super-ex-title">Ejercicio ${i+1}</div>
+      <label>Seleccionar ejercicio</label>
+      <input class="super-name" data-i="${i}" list="superExerciseOptions" value="${escapeHtml(ex.ejercicio||'')}" placeholder="Buscar en biblioteca…">
+      <div class="super-ex-grid">
+        <div>
+          <label>Repeticiones</label>
+          <input class="super-reps" data-i="${i}" value="${escapeHtml(ex.reps||'')}" placeholder="Ej.: 8-12">
+        </div>
+        <div>
+          <label>Tempo</label>
+          <input class="super-tempo" data-i="${i}" value="${escapeHtml(ex.tempo||'')}" placeholder="Ej.: 1-0-3-1">
+        </div>
+        <div>
+          <label>Carga inicial</label>
+          <input class="super-load" data-i="${i}" value="${escapeHtml(ex.load||'')}" placeholder="Ej.: 20 kg">
+        </div>
+      </div>`;
+    box.appendChild(card);
+  });
+
+  box.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const i=Number(inp.dataset.i);
+      if(inp.classList.contains('super-name')){
+        const name=inp.value.trim();
+        const lib=exercises.find(x=>String(x.ejercicio||'').trim().toLowerCase()===name.toLowerCase());
+        blockDraft[i].ejercicio=name;
+        blockDraft[i].id_ejercicio=lib?.id_ejercicio||'';
+      }else if(inp.classList.contains('super-reps')) blockDraft[i].reps=inp.value.trim();
+      else if(inp.classList.contains('super-tempo')) blockDraft[i].tempo=inp.value.trim();
+      else if(inp.classList.contains('super-load')) blockDraft[i].load=inp.value.trim();
+      markEditorDirty();
+    });
+    inp.addEventListener('change',()=>{
+      const i=Number(inp.dataset.i);
+      if(inp.classList.contains('super-name')){
+        const name=inp.value.trim();
+        const lib=exercises.find(x=>String(x.ejercicio||'').trim().toLowerCase()===name.toLowerCase());
+        blockDraft[i].ejercicio=name;
+        blockDraft[i].id_ejercicio=lib?.id_ejercicio||'';
+      }
+      markEditorDirty();
+    });
+  });
+  updateBuilderButtons();
+}
+
 function setBlockMode(mode, keepDraft=false){
   blockMode=mode==='COMBINADO'?'COMBINADO':'INDIVIDUAL';
   document.getElementById('individualTypeBtn').classList.toggle('active',blockMode==='INDIVIDUAL');
   document.getElementById('combinedTypeBtn').classList.toggle('active',blockMode==='COMBINADO');
-  document.getElementById('seriesLabel').textContent=blockMode==='COMBINADO'?'Vueltas':'Series';
-  document.getElementById('noteHelp').textContent=blockMode==='COMBINADO'
-    ? 'Opcional · esta nota se mostrará una sola vez para toda la superserie.'
-    : 'Opcional · esta nota corresponde a este ejercicio.';
-  document.getElementById('exerciseBuilderTitle').textContent=blockMode==='COMBINADO'?'Agregar ejercicio a la superserie':'Ejercicio';
-  document.getElementById('draftWrap').style.display=blockMode==='COMBINADO'?'block':'none';
-  document.getElementById('draftCount').style.display=blockMode==='COMBINADO'?'inline-block':'none';
-  document.getElementById('finishBlockBtn').style.display=blockMode==='COMBINADO'?'inline-block':'none';
-  if(!keepDraft){ blockDraft=[]; editingDraftIndex=null; }
-  renderDraft();
+  document.getElementById('individualEditorSection').style.display=blockMode==='INDIVIDUAL'?'block':'none';
+  document.getElementById('superEditorSection').style.display=blockMode==='COMBINADO'?'block':'none';
+
+  if(blockMode==='COMBINADO'){
+    if(!keepDraft || blockDraft.length<2){
+      const count=Number(document.getElementById('superExerciseCount').value)||2;
+      blockDraft=Array.from({length:count},()=>({id_ejercicio:'',ejercicio:'',reps:'',tempo:'',load:''}));
+    }
+    populateSuperExerciseOptions();
+    renderSuperExerciseFields();
+  }else if(!keepDraft){
+    blockDraft=[];
+  }
   updateBuilderButtons();
 }
 
 function updateBuilderButtons(){
   const add=document.getElementById('addBtn');
-  const finish=document.getElementById('finishBlockBtn');
   if(blockMode==='INDIVIDUAL'){
     add.textContent=editingBlockIndex===null?'Agregar ejercicio':'Guardar cambios';
-    finish.style.display='none';
     const noChanges=editingBlockIndex!==null && !editorDirty;
     add.disabled=noChanges;
     add.classList.toggle('editor-save-disabled',noChanges);
   }else{
-    add.textContent=editingDraftIndex===null?'Agregar a superserie':'Guardar ejercicio';
-    add.disabled=false;
-    add.classList.remove('editor-save-disabled');
-    finish.style.display='inline-block';
-    finish.textContent=editingBlockIndex===null?'Agregar superserie':'Guardar superserie';
+    add.textContent=editingBlockIndex===null?'Agregar superserie':'Guardar cambios';
+    const valid=blockDraft.length>=2 && blockDraft.every(ex=>ex.id_ejercicio && ex.ejercicio);
     const noChanges=editingBlockIndex!==null && !editorDirty;
-    finish.disabled=blockDraft.length<2 || noChanges;
-    finish.classList.toggle('editor-save-disabled',noChanges || blockDraft.length<2);
+    add.disabled=!valid || noChanges;
+    add.classList.toggle('editor-save-disabled',!valid || noChanges);
   }
-  document.getElementById('draftCount').textContent=blockDraft.length+' / 5';
 }
 
 function renderDraft(){
-  const box=document.getElementById('draftList');
-  if(!box) return;
-  box.innerHTML='';
-  blockDraft.forEach((ex,i)=>{
-    const row=document.createElement('div'); row.className='draft-item';
-    const left=document.createElement('div');
-    left.innerHTML='<b>'+(i+1)+'. '+ex.ejercicio+'</b><div class="small">'+(ex.reps||'—')+' reps · tempo '+(ex.tempo||'—')+(ex.load?' · '+ex.load:'')+'</div>';
-    const actions=document.createElement('div'); actions.className='item-actions';
-    const up=document.createElement('button'); up.className='mini'; up.textContent='↑'; up.disabled=i===0;
-    up.onclick=()=>{[blockDraft[i-1],blockDraft[i]]=[blockDraft[i],blockDraft[i-1]];markEditorDirty();renderDraft();};
-    const down=document.createElement('button'); down.className='mini'; down.textContent='↓'; down.disabled=i===blockDraft.length-1;
-    down.onclick=()=>{[blockDraft[i+1],blockDraft[i]]=[blockDraft[i],blockDraft[i+1]];markEditorDirty();renderDraft();};
-    const edit=document.createElement('button'); edit.className='mini'; edit.textContent='Editar'; edit.onclick=()=>editDraftExercise(i);
-    const del=document.createElement('button'); del.className='mini danger'; del.textContent='Quitar';
-    del.onclick=()=>{blockDraft.splice(i,1);markEditorDirty();renderDraft();clearExerciseFields();};
-    actions.append(up,down,edit,del); row.append(left,actions); box.appendChild(row);
-  });
-  updateBuilderButtons();
+  if(blockMode==='COMBINADO') renderSuperExerciseFields();
 }
 
-function editDraftExercise(i){
-  const ex=blockDraft[i];
-  editingDraftIndex=i;
-  selected=exercises.find(x=>x.id_ejercicio===ex.id_ejercicio)||{id_ejercicio:ex.id_ejercicio,ejercicio:ex.ejercicio};
-  document.getElementById('search').value=ex.ejercicio;
-  document.getElementById('preview').style.display='block';
-  document.getElementById('previewName').textContent=ex.ejercicio;
-  document.getElementById('previewMeta').textContent='Editando dentro de la superserie';
-  document.getElementById('reps').value=ex.reps||'';
-  document.getElementById('tempo').value=ex.tempo||'';
-  document.getElementById('load').value=ex.load||'';
-  updateBuilderButtons();
-}
+function editDraftExercise(i){}
+
 
 function openEditor(day,index=null){
   collapsedDays.delete(day);
@@ -953,8 +1029,6 @@ function openEditor(day,index=null){
     document.getElementById('editorTitle').textContent='Agregar en '+dayTitle(day);
   }else{
     const block=routines[day][index];
-    document.getElementById('series').value=block.series||'3';
-    document.getElementById('trainerNote').value=block.nota_entrenador||'';
     blockDraft=block.exercises.map(x=>({...x}));
     setBlockMode(block.tipo_bloque,true);
 
@@ -965,15 +1039,17 @@ function openEditor(day,index=null){
       lockedName.textContent=ex.ejercicio;
       lockedBox.style.display='block';
       searchSection.style.display='none';
+      document.getElementById('series').value=block.series||'3';
+      document.getElementById('trainerNote').value=block.nota_entrenador||'';
       document.getElementById('reps').value=ex.reps||'';
       document.getElementById('tempo').value=ex.tempo||'';
       document.getElementById('load').value=ex.load||'';
     }else{
       document.getElementById('editorTitle').textContent='Superserie';
-      lockedName.textContent='Superserie · '+block.exercises.length+' ejercicios';
-      lockedBox.style.display='block';
-      searchSection.style.display='block';
-      clearExerciseFields();
+      document.getElementById('superExerciseCount').value=String(Math.max(2,Math.min(5,block.exercises.length)));
+      document.getElementById('superRounds').value=block.series||'3';
+      document.getElementById('superNote').value=block.nota_entrenador||'';
+      renderSuperExerciseFields();
     }
 
     editorDirty=false;
@@ -988,7 +1064,6 @@ function openEditor(day,index=null){
   }
   updateBuilderButtons();
 }
-
 function currentExerciseEntry(){
   if(!selected){alert('Primero seleccioná un ejercicio de la biblioteca.');return null;}
   return {
@@ -1034,6 +1109,12 @@ function renderWorkspace(){
   parkEditor();
   const workspace=document.getElementById('routineWorkspace');
   const token=document.getElementById('student').value;
+  const globalIndicator=document.getElementById('routineSaveIndicator');
+  if(globalIndicator){
+    const isSaving=savingDays.size>0 || routineMetaSaving;
+    globalIndicator.textContent=isSaving?'Guardando…':'✓ Rutina guardada';
+    globalIndicator.classList.toggle('saving',isSaving);
+  }
   if(!token){
     workspace.innerHTML='<div class="empty">Seleccioná una alumna.</div>';
     document.getElementById('weekSummary').textContent='';
@@ -1151,6 +1232,8 @@ document.getElementById('saveRenameDayBtn').onclick=async()=>{
   const original=btn.textContent;
   btn.disabled=true;
   btn.textContent='Guardando…';
+  routineMetaSaving=true;
+  renderWorkspace();
   try{
     await persistDayLabel(day,type,name);
     if(name) dayLabels[day]={type,name}; else delete dayLabels[day];
@@ -1159,8 +1242,10 @@ document.getElementById('saveRenameDayBtn').onclick=async()=>{
   }catch(e){
     alert('No se pudo guardar el nombre del día.');
   }finally{
+    routineMetaSaving=false;
     btn.disabled=false;
     btn.textContent=original;
+    renderWorkspace();
   }
 };
 
@@ -1174,12 +1259,15 @@ document.getElementById('addDayBtn').onclick=()=>{
 };
 
 document.getElementById('individualTypeBtn').onclick=()=>{
-  if(blockMode==='COMBINADO' && blockDraft.length && !confirm('¿Cambiar a ejercicio individual? Se vaciará la superserie que estás armando.')) return;
-  setBlockMode('INDIVIDUAL'); clearExerciseFields(); markEditorDirty();
+  if(blockMode==='INDIVIDUAL') return;
+  setBlockMode('INDIVIDUAL');
+  clearExerciseFields();
+  markEditorDirty();
 };
 document.getElementById('combinedTypeBtn').onclick=()=>{
-  if(blockMode==='INDIVIDUAL' && selected && !confirm('¿Cambiar a superserie? Se limpiará el ejercicio que estabas cargando.')) return;
-  setBlockMode('COMBINADO'); clearExerciseFields(); markEditorDirty();
+  if(blockMode==='COMBINADO') return;
+  setBlockMode('COMBINADO');
+  markEditorDirty();
 };
 document.getElementById('closeEditorBtn').onclick=()=>closeEditor(true);
 document.getElementById('cancelEditBtn').onclick=()=>closeEditor(true);
@@ -1195,6 +1283,26 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.search-wrap')) document.getElementById('results').style.display='none';
 });
 
+document.getElementById('superExerciseCount').addEventListener('change',()=>{
+  const newCount=Number(document.getElementById('superExerciseCount').value)||2;
+  if(newCount<blockDraft.length){
+    const removed=blockDraft.slice(newCount);
+    const hasData=removed.some(x=>x.ejercicio||x.reps||x.tempo||x.load);
+    if(hasData && !confirm('Al reducir la cantidad se eliminarán los ejercicios sobrantes. ¿Continuar?')){
+      document.getElementById('superExerciseCount').value=String(blockDraft.length);
+      return;
+    }
+  }
+  while(blockDraft.length<newCount) blockDraft.push({id_ejercicio:'',ejercicio:'',reps:'',tempo:'',load:''});
+  blockDraft=blockDraft.slice(0,newCount);
+  markEditorDirty();
+  renderSuperExerciseFields();
+});
+['superRounds','superNote'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>markEditorDirty());
+  document.getElementById(id).addEventListener('change',()=>markEditorDirty());
+});
+
 ['series','trainerNote','reps','tempo','load'].forEach(id=>{
   const el=document.getElementById(id);
   if(el){
@@ -1208,11 +1316,11 @@ document.addEventListener('click',e=>{
 });
 
 document.getElementById('addBtn').onclick=async()=>{
-  const ex=currentExerciseEntry();
-  if(!ex) return;
   const day=currentDay();
 
   if(blockMode==='INDIVIDUAL'){
+    const ex=currentExerciseEntry();
+    if(!ex) return;
     const block={
       bloque_id:editingBlockIndex!==null ? routines[day][editingBlockIndex].bloque_id : makeBlockId(day),
       tipo_bloque:'INDIVIDUAL',
@@ -1227,26 +1335,25 @@ document.getElementById('addBtn').onclick=async()=>{
     return;
   }
 
-  if(editingDraftIndex!==null){
-    blockDraft[editingDraftIndex]=ex;
-    editingDraftIndex=null;
-    markEditorDirty();
-  }else{
-    if(blockDraft.length>=5){alert('El máximo es de 5 ejercicios por superserie.');return;}
-    blockDraft.push(ex);
-    markEditorDirty();
-  }
-  clearExerciseFields(); renderDraft();
-};
+  // Superserie: toda la estructura se confirma de una vez.
+  const count=Number(document.getElementById('superExerciseCount').value)||2;
+  if(blockDraft.length!==count){ renderSuperExerciseFields(); return; }
 
-document.getElementById('finishBlockBtn').onclick=async()=>{
-  if(blockDraft.length<2){alert('Una superserie necesita al menos 2 ejercicios.');return;}
-  const day=currentDay();
+  // Resolver IDs desde la biblioteca y validar.
+  blockDraft=blockDraft.map(ex=>{
+    const lib=exercises.find(x=>String(x.ejercicio||'').trim().toLowerCase()===String(ex.ejercicio||'').trim().toLowerCase());
+    return {...ex,id_ejercicio:lib?.id_ejercicio||ex.id_ejercicio||''};
+  });
+  if(blockDraft.some(ex=>!ex.ejercicio || !ex.id_ejercicio)){
+    alert('Seleccioná un ejercicio válido de la biblioteca en cada posición.');
+    return;
+  }
+
   const block={
     bloque_id:editingBlockIndex!==null ? routines[day][editingBlockIndex].bloque_id : makeBlockId(day),
     tipo_bloque:'COMBINADO',
-    series:document.getElementById('series').value||'3',
-    nota_entrenador:document.getElementById('trainerNote').value.trim(),
+    series:document.getElementById('superRounds').value||'3',
+    nota_entrenador:document.getElementById('superNote').value.trim(),
     exercises:blockDraft.map(x=>({...x}))
   };
   if(editingBlockIndex===null) routines[day].push(block);
@@ -1254,6 +1361,7 @@ document.getElementById('finishBlockBtn').onclick=async()=>{
   closeEditor(false);
   await commitDay(day);
 };
+document.getElementById('finishBlockBtn').onclick=()=>{};
 
 document.getElementById('student').addEventListener('change',()=>loadCurrentRoutinesForStudent());
 
