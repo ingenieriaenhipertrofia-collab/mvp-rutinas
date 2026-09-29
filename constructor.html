@@ -481,15 +481,23 @@ function populateStudents(preferredToken=''){
   const select=document.getElementById('student');
   const previous=preferredToken || select.value;
   select.innerHTML='';
+
+  const placeholder=document.createElement('option');
+  placeholder.value='';
+  placeholder.textContent='Elegir alumno';
+  select.appendChild(placeholder);
+
   const byToken=new Map();
   allKnownStudents().filter(s=>s.nombre && s.token && effectiveActive(s))
     .forEach(s=>byToken.set(String(s.token).trim(),s));
   const active=[...byToken.values()];
+
   if(!active.length){
-    const opt=document.createElement('option');
-    opt.value=''; opt.textContent='No hay alumnas activas';
-    select.appendChild(opt); return;
+    placeholder.textContent='No hay alumnos activos';
+    select.value='';
+    return;
   }
+
   active.sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es',{sensitivity:'base'}))
     .forEach(s=>{
       const opt=document.createElement('option');
@@ -498,7 +506,12 @@ function populateStudents(preferredToken=''){
       opt.dataset.alumnaId=s.alumna_id||'';
       select.appendChild(opt);
     });
-  if(previous && [...select.options].some(o=>o.value===previous)) select.value=previous;
+
+  if(previous && [...select.options].some(o=>o.value===previous)){
+    select.value=previous;
+  }else{
+    select.value='';
+  }
 }
 
 
