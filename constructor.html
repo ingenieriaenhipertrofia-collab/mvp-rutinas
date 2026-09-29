@@ -119,6 +119,7 @@ button:disabled{cursor:not-allowed;opacity:1}
 .super-top-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
 .super-exercises{display:flex;flex-direction:column;gap:12px;margin-top:16px}
 .super-ex-card{background:#fff;border:1px solid #d7dde4;border-radius:12px;padding:14px}
+.super-ex-card .search-wrap{position:relative}.super-ex-card .results{top:49px;max-height:280px;overflow-y:auto}
 .super-ex-title{font-weight:800;margin-bottom:12px}
 .super-ex-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
 @media(max-width:700px){.super-top-grid,.super-ex-grid{grid-template-columns:1fr}}
@@ -149,6 +150,7 @@ button:disabled{cursor:not-allowed;opacity:1}
       </select>
       <div class="new-student-row" style="gap:8px;flex-wrap:wrap">
         <button id="copySelectedStudentLinkBtn" class="link-button" type="button">Copiar enlace para alumna</button>
+        <button id="viewFullRoutineBtn" class="link-button" type="button">Ver rutina completa</button>
         <button id="newStudentBtn" class="link-button" type="button">＋ Nueva alumna</button>
       </div>
     </div>
@@ -226,7 +228,7 @@ button:disabled{cursor:not-allowed;opacity:1}
           </div>
           <div>
             <label>Tempo</label>
-            <input id="tempo" placeholder="Ej.: 1-0-3-1">
+            <input id="tempo" inputmode="numeric" pattern="[0-9]*" placeholder="Ej.: 3010">
           </div>
           <div>
             <label>Carga inicial</label>
@@ -258,7 +260,6 @@ button:disabled{cursor:not-allowed;opacity:1}
         </div>
       </div>
 
-      <datalist id="superExerciseOptions"></datalist>
       <div id="superExercisesContainer" class="super-exercises"></div>
 
       <div class="editor-section">
@@ -600,6 +601,29 @@ document.getElementById('copySelectedStudentLinkBtn').addEventListener('click',a
   }catch(e){
     prompt('Copiá este enlace para la alumna:',link);
   }
+});
+
+
+function selectedFullRoutineLink(){
+  const token=document.getElementById('student').value;
+  if(!token) return '';
+  return 'https://ingenieriaenhipertrofia-collab.github.io/mvp-rutinas/rutina.html?token='+encodeURIComponent(token);
+}
+
+document.getElementById('viewFullRoutineBtn').addEventListener('click',async()=>{
+  const link=selectedFullRoutineLink();
+  if(!link){
+    alert('Seleccioná una alumna primero.');
+    return;
+  }
+
+  const ok=await flushAllPending();
+  if(ok===false){
+    alert('No se pudo completar un guardado pendiente. Volvé a intentar.');
+    return;
+  }
+
+  window.open(link,'_blank','noopener');
 });
 
 
@@ -965,14 +989,48 @@ function markEditorDirty(){
 }
 
 function populateSuperExerciseOptions(){
-  const list=document.getElementById('superExerciseOptions');
-  if(!list) return;
-  list.innerHTML='';
-  exercises.forEach(ex=>{
-    const option=document.createElement('option');
-    option.value=ex.ejercicio;
-    list.appendChild(option);
+  // Las sugerencias de superserie se generan por campo y muestran solo nombres de ejercicios.
+}
+
+function cardResultsForSuperInput(input){
+  return input.closest('.search-wrap')?.querySelector('.super-results') || null;
+}
+
+function renderSuperNameResults(box, query, index, input){
+  if(!box) return;
+  const q=norm(String(query||'').trim());
+  box.innerHTML='';
+  if(!q){
+    box.style.display='none';
+    return;
+  }
+
+  const matches=exercises
+    .filter(ex=>norm(ex.ejercicio||'').includes(q))
+    .slice(0,8);
+
+  if(!matches.length){
+    box.innerHTML='<div class="result small">No encontré ejercicios.</div>';
+    box.style.display='block';
+    return;
+  }
+
+  matches.forEach(ex=>{
+    const row=document.createElement('div');
+    row.className='result';
+    row.textContent=ex.ejercicio;
+    row.addEventListener('mousedown',e=>e.preventDefault());
+    row.addEventListener('click',()=>{
+      input.value=ex.ejercicio;
+      blockDraft[index].ejercicio=ex.ejercicio;
+      blockDraft[index].id_ejercicio=ex.id_ejercicio||'';
+      box.style.display='none';
+      markEditorDirty();
+      updateBuilderButtons();
+    });
+    box.appendChild(row);
   });
+  box.style.display='block';
 }
 
 function renderSuperExerciseFields(){
@@ -990,7 +1048,10 @@ function renderSuperExerciseFields(){
     card.innerHTML=`
       <div class="super-ex-title">Ejercicio ${i+1}</div>
       <label>Seleccionar ejercicio</label>
-      <input class="super-name" data-i="${i}" list="superExerciseOptions" value="${escapeHtml(ex.ejercicio||'')}" placeholder="Buscar en biblioteca…">
+      <div class="search-wrap">
+        <input class="super-name" data-i="${i}" value="${escapeHtml(ex.ejercicio||'')}" placeholder="Buscar en biblioteca…" autocomplete="off">
+        <div class="results super-results" data-i="${i}"></div>
+      </div>
       <div class="super-ex-grid">
         <div>
           <label>Repeticiones</label>
@@ -998,7 +1059,7 @@ function renderSuperExerciseFields(){
         </div>
         <div>
           <label>Tempo</label>
-          <input class="super-tempo" data-i="${i}" value="${escapeHtml(ex.tempo||'')}" placeholder="Ej.: 1-0-3-1">
+          <input class="super-tempo" data-i="${i}" inputmode="numeric" pattern="[0-9]*" value="${escapeHtml(ex.tempo||'')}" placeholder="Ej.: 3010">
         </div>
         <div>
           <label>Carga inicial</label>
@@ -1016,10 +1077,20 @@ function renderSuperExerciseFields(){
         const lib=exercises.find(x=>String(x.ejercicio||'').trim().toLowerCase()===name.toLowerCase());
         blockDraft[i].ejercicio=name;
         blockDraft[i].id_ejercicio=lib?.id_ejercicio||'';
+
+        const resultsBox=cardResultsForSuperInput(inp);
+        renderSuperNameResults(resultsBox, name, i, inp);
       }else if(inp.classList.contains('super-reps')) blockDraft[i].reps=inp.value.trim();
       else if(inp.classList.contains('super-tempo')) blockDraft[i].tempo=inp.value.trim();
       else if(inp.classList.contains('super-load')) blockDraft[i].load=inp.value.trim();
       markEditorDirty();
+    });
+    inp.addEventListener('focus',()=>{
+      if(inp.classList.contains('super-name')){
+        const i=Number(inp.dataset.i);
+        const resultsBox=cardResultsForSuperInput(inp);
+        renderSuperNameResults(resultsBox, inp.value.trim(), i, inp);
+      }
     });
     inp.addEventListener('change',()=>{
       const i=Number(inp.dataset.i);
@@ -1368,10 +1439,13 @@ document.getElementById('search').addEventListener('input',e=>{
   selected=null;
   document.getElementById('preview').style.display='none';
   if(!q){document.getElementById('results').style.display='none';return;}
-  renderResults(exercises.filter(ex=>norm(ex.ejercicio).includes(q)||norm(ex.id_ejercicio).includes(q)));
+  renderResults(exercises.filter(ex=>norm(ex.ejercicio).includes(q)));
 });
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.search-wrap')) document.getElementById('results').style.display='none';
+  if(!e.target.closest('.search-wrap')){
+    document.getElementById('results').style.display='none';
+    document.querySelectorAll('.super-results').forEach(box=>box.style.display='none');
+  }
 });
 
 document.getElementById('superExerciseCount').addEventListener('change',()=>{
