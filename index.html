@@ -17,6 +17,13 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:
 .eyebrow{color:var(--gold);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
 .progress{font-size:12px;color:var(--muted);font-weight:700}
 h2{margin:7px 0 12px;font-size:25px}
+.exercise-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:7px 0 12px}
+.exercise-title-row h2{margin:0;min-width:0;flex:1}
+.exercise-title-row .video-btn{flex:0 0 auto;margin-top:1px}
+@media (max-width:420px){
+  .exercise-title-row{flex-wrap:wrap;gap:10px}
+  .exercise-title-row .video-btn{margin-left:auto}
+}
 .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px}
 .meta div{background:#f7f8f9;border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
 .meta b{display:block;font-size:16px}
@@ -50,7 +57,6 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .back-days{border:0;background:transparent;padding:0;color:var(--muted);font-weight:700;cursor:pointer;margin-bottom:8px}
 
 
-.video-wrap{margin:14px 0 4px}
 .video-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:12px;text-decoration:none;font-weight:700;border:1px solid #d7dbe0;background:#fff;color:#111}
 .video-btn.hidden{display:none}
 .trainer-note{display:none;margin:12px 0 16px;padding:13px 14px;border-radius:10px;background:#fff8e7;border:1px solid #ead8a0;border-left:4px solid var(--gold)}
@@ -88,7 +94,10 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
         <div class="progress" id="progress"></div>
       </div>
 
-      <h2 id="ejercicio"></h2>
+      <div class="exercise-title-row">
+        <h2 id="ejercicio"></h2>
+        <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
+      </div>
 
       <div class="meta">
         <div><b id="series"></b><span>series</span></div>
@@ -97,9 +106,6 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
       </div>
       
 
-      <div class="video-wrap">
-        <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
-      </div>
 
       <div id="trainerNoteBox" class="trainer-note">
         <div class="trainer-note-title">Nota del entrenador</div>
