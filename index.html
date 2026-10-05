@@ -538,12 +538,17 @@ document.getElementById('doneDaysBtn').addEventListener('click',()=>{
 
 
 async function loadLastRowsForToken(token){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),2500);
+
   try{
     const sep=LAST_API_URL.includes('?')?'&':'?';
     const res=await fetch(
       LAST_API_URL+sep+'token='+encodeURIComponent(token)+'&t='+Date.now(),
-      {cache:'no-store'}
+      {cache:'no-store',signal:controller.signal}
     );
+    clearTimeout(timeout);
+
     if(!res.ok) throw new Error('HTTP '+res.status);
 
     const data=await res.json();
@@ -559,12 +564,40 @@ async function loadLastRowsForToken(token){
       return out;
     });
   }catch(e){
-    console.warn('Estado incremental no disponible; usando Ultimos_Registros_Public como respaldo.',e);
+    clearTimeout(timeout);
+    console.warn('Estado incremental lento/no disponible; usando Ultimos_Registros_Public como respaldo.',e);
+
     const bust='&t='+Date.now();
     const res=await fetch(LAST_CSV_URL+bust,{cache:'no-store'});
     if(!res.ok) throw new Error('No se pudo cargar el historial de pesos.');
     return parseCsv(await res.text());
   }
+}
+
+function refreshHistoryOnCurrentExercise(){
+  if(!rows.length || document.getElementById('app').classList.contains('hidden')) return;
+
+  const r=rows[current];
+  renderLast(r);
+
+  const todayRec=getTodayRecord(r);
+  if(!todayRec) return;
+
+  const fromToday=[
+    todayRec.hoy_s1 || '',
+    todayRec.hoy_s2 || '',
+    todayRec.hoy_s3 || '',
+    todayRec.hoy_s4 || '',
+    todayRec.hoy_s5 || ''
+  ];
+
+  const inputs=[...document.querySelectorAll('#seriesBox .weight')];
+  inputs.forEach((input,i)=>{
+    if(String(input.value||'').trim()==='' && String(fromToday[i]||'').trim()!==''){
+      input.value=fromToday[i];
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  });
 }
 
 (async()=>{
@@ -574,30 +607,43 @@ async function loadLastRowsForToken(token){
     const params=new URLSearchParams(window.location.search);
     const urlToken=(params.get('token')||'lara-test').trim();
 
+    // El historial se pide en segundo plano: nunca bloquea la pantalla inicial.
+    const historyPromise=loadLastRowsForToken(urlToken)
+      .then(data=>{
+        lastRows=data;
+        refreshHistoryOnCurrentExercise();
+      })
+      .catch(e=>{
+        console.warn('No se pudo cargar el historial de pesos.',e);
+      });
+
     const bust='&t='+Date.now();
-    const [res,lastData,libRes,dayNamesRes]=await Promise.all([
+    const [res,libRes,dayNamesRes]=await Promise.all([
       fetch(CSV_URL+bust,{cache:'no-store'}),
-      loadLastRowsForToken(urlToken),
       fetch(EXERCISES_CSV_URL+bust,{cache:'no-store'}),
       fetch(DAY_NAMES_CSV_URL+bust,{cache:'no-store'})
     ]);
-    const text=await res.text();
+
+    const routineText=await res.text();
     const libText=await libRes.text();
     const dayNamesText=await dayNamesRes.text();
 
     exerciseLibrary=parseCsv(libText);
     dayLabels=buildDayLabels(parseCsv(dayNamesText),urlToken);
     allRows=enrichRoutineRows(
-      parseCsv(text)
+      parseCsv(routineText)
         .filter(r=>r.ejercicio && r.dia && String(r.token||'').trim()===urlToken),
       exerciseLibrary
     )
       .sort((a,b)=>(a.dia||'').localeCompare(b.dia||'') || (Number(a.orden)||0)-(Number(b.orden)||0));
 
-    lastRows=lastData;
     if(!allRows.length) throw new Error('No hay una rutina vigente para este token.');
+
     document.getElementById('loading').classList.add('hidden');
     showDaySelector();
+
+    // Evita advertencias por promesas no observadas; no se espera para mostrar la app.
+    void historyPromise;
   }catch(e){
     document.getElementById('loading').textContent='Error al cargar la rutina: '+e.message;
   }
