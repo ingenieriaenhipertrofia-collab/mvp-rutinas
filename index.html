@@ -21,6 +21,8 @@ h2{margin:7px 0 12px;font-size:25px}
 .exercise-title-row h2{margin:0;min-width:0;flex:1}
 .exercise-title-row .video-btn{flex:0 0 auto;margin-top:0}
 @media (max-width:420px){
+  .combo-rounds{font-size:19px}
+
   .exercise-title-row{flex-wrap:wrap;gap:10px}
   .exercise-title-row .video-btn{margin-left:auto}
 }
@@ -70,7 +72,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .combined-view{margin-top:10px}
 .combo-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:8px 0 12px}
 .combo-head h2{margin:0;font-size:24px}
-.combo-rounds{font-size:16px;font-weight:800;color:var(--ink);white-space:nowrap}
+.combo-rounds{font-size:21px;font-weight:800;color:var(--ink);white-space:nowrap}
 .combo-grid{display:grid;gap:10px;margin-top:10px}
 .combo-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .combo-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -79,6 +81,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .combo-name{font-size:16px;font-weight:800;line-height:1.15;min-height:36px;word-break:break-word}
 .combo-card.vertical .combo-name{font-size:18px;min-height:0}
 .combo-video{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:800;background:#fff}
+.combo-video-slot{min-height:42px;display:flex;align-items:flex-start}
 .combo-prescription{margin-top:9px;padding:8px;border-radius:8px;background:#f7f8f9;border:1px solid var(--line);font-size:12px;line-height:1.35}
 .combo-prescription b{font-size:13px}
 .combo-last{margin-top:9px;padding:8px;border-left:3px solid var(--gold);border-radius:7px;background:#f7f8f9}
@@ -90,8 +93,11 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .combo-weight-row label{font-size:11px;font-weight:800;min-width:22px}
 .combo-weight{width:100%;min-width:0;padding:9px 7px;border:1px solid var(--line);border-radius:8px;font-size:16px}
 .combo-unit{font-size:11px;color:var(--muted);font-weight:700}
-.combo-vertical-weightgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}
-.combo-vertical-weightgrid .combo-weight-row{margin-top:0}
+.combo-vertical-weightgrid{display:flex;gap:6px;margin-top:10px;flex-wrap:nowrap}
+.combo-vertical-weightgrid .combo-weight-row{margin-top:0;flex:1 1 0;min-width:0;gap:4px}
+.combo-vertical-weightgrid .combo-weight-row label{min-width:auto;font-size:10px}
+.combo-vertical-weightgrid .combo-weight{min-width:0;width:100%;padding:8px 4px;font-size:14px}
+.combo-vertical-weightgrid .combo-unit{display:none}
 .combo-note{margin:10px 0 12px;padding:11px 12px;border-radius:10px;background:#fff8e7;border:1px solid #ead8a0;border-left:4px solid var(--gold)}
 .combo-note-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#7a651d;margin-bottom:4px}
 .combo-comment-wrap{margin-top:14px}
@@ -618,7 +624,20 @@ function makeComboCard(r,exIndex,rounds,vertical){
   card.appendChild(name);
 
   const video=String(r.video_url||'').trim();
-  if(video){
+  if(!vertical){
+    const videoSlot=document.createElement('div');
+    videoSlot.className='combo-video-slot';
+    if(video){
+      const a=document.createElement('a');
+      a.className='combo-video';
+      a.href=video;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      a.textContent='▶ Ver video';
+      videoSlot.appendChild(a);
+    }
+    card.appendChild(videoSlot);
+  }else if(video){
     const a=document.createElement('a');
     a.className='combo-video';
     a.href=video;
@@ -685,18 +704,33 @@ function renderCombined(item){
   document.getElementById('comboRounds').textContent=`${rounds} vuelta${rounds===1?'':'s'}`;
 
   const note=String(item.rows[0]?.nota_entrenador||'').trim();
-  document.getElementById('comboNoteText').textContent=note;
-  document.getElementById('comboNote').classList.toggle('hidden',!note);
+  const noteBox=document.getElementById('comboNote');
+  const noteText=document.getElementById('comboNoteText');
+  noteText.textContent=note;
 
   const host=document.getElementById('comboCards');
   host.innerHTML='';
 
   if(count<=3){
+    noteBox.classList.add('hidden');
+
     const grid=document.createElement('div');
     grid.className=`combo-grid cols-${count}`;
     item.rows.forEach((r,i)=>grid.appendChild(makeComboCard(r,i,rounds,false)));
     host.appendChild(grid);
+
+    if(note){
+      const bottomNote=document.createElement('div');
+      bottomNote.className='combo-note';
+      bottomNote.innerHTML=
+        '<div class="combo-note-title">Nota del entrenador</div>'+
+        '<div></div>';
+      bottomNote.lastElementChild.textContent=note;
+      host.appendChild(bottomNote);
+    }
   }else{
+    noteBox.classList.toggle('hidden',!note);
+
     const grid=document.createElement('div');
     grid.className='combo-grid';
     item.rows.forEach((r,i)=>grid.appendChild(makeComboCard(r,i,rounds,true)));
