@@ -21,7 +21,7 @@ h2{margin:7px 0 12px;font-size:25px}
 .exercise-title-row h2{margin:0;min-width:0;flex:1}
 .exercise-title-row .video-btn{flex:0 0 auto;margin-top:0}
 @media (max-width:420px){
-  .combo-rounds{font-size:19px}
+  .combo-rounds{font-size:18px}
 
   .exercise-title-row{flex-wrap:wrap;gap:10px}
   .exercise-title-row .video-btn{margin-left:auto}
@@ -72,7 +72,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .combined-view{margin-top:10px}
 .combo-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:8px 0 12px}
 .combo-head h2{margin:0;font-size:24px}
-.combo-rounds{font-size:21px;font-weight:800;color:var(--ink);white-space:nowrap}
+.combo-rounds{font-size:20px;font-weight:800;color:var(--ink);white-space:nowrap}
 .combo-grid{display:grid;gap:10px;margin-top:10px}
 .combo-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .combo-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -80,6 +80,12 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .combo-card.vertical{padding:12px}
 .combo-name{font-size:16px;font-weight:800;line-height:1.15;min-height:36px;word-break:break-word}
 .combo-card.vertical .combo-name{font-size:18px;min-height:0}
+.combo-card.vertical .combo-topline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.combo-card.vertical .combo-name{flex:1}
+.combo-card.vertical .combo-video{margin-top:0;padding:6px 9px;font-size:12px;border-radius:8px}
+.combo-card.vertical .combo-meta-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.combo-card.vertical .combo-prescription,
+.combo-card.vertical .combo-last{margin-top:0}
 .combo-video{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:800;background:#fff}
 .combo-video-slot{min-height:42px;display:flex;align-items:flex-start}
 .combo-prescription{margin-top:9px;padding:8px;border-radius:8px;background:#f7f8f9;border:1px solid var(--line);font-size:12px;line-height:1.35}
@@ -618,13 +624,52 @@ function makeComboCard(r,exIndex,rounds,vertical){
   const card=document.createElement('div');
   card.className='combo-card'+(vertical?' vertical':'');
 
-  const name=document.createElement('div');
-  name.className='combo-name';
-  name.textContent=r.ejercicio||'Ejercicio';
-  card.appendChild(name);
-
   const video=String(r.video_url||'').trim();
-  if(!vertical){
+
+  if(vertical){
+    const top=document.createElement('div');
+    top.className='combo-topline';
+
+    const name=document.createElement('div');
+    name.className='combo-name';
+    name.textContent=r.ejercicio||'Ejercicio';
+    top.appendChild(name);
+
+    if(video){
+      const a=document.createElement('a');
+      a.className='combo-video';
+      a.href=video;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      a.textContent='▶ Ver video';
+      top.appendChild(a);
+    }
+
+    card.appendChild(top);
+
+    const metaRow=document.createElement('div');
+    metaRow.className='combo-meta-row';
+
+    const pres=document.createElement('div');
+    pres.className='combo-prescription';
+    pres.innerHTML=`<b>${escapeHtml(String(r.reps||'—'))} reps</b><br>Tempo ${escapeHtml(String(r.tempo||'—'))}`;
+
+    const prev=getPreviousWeights(r);
+    const last=document.createElement('div');
+    last.className='combo-last';
+    last.innerHTML=
+      `<div class="combo-last-title">Último registro</div>`+
+      `<div class="combo-last-values">${prev.values.length ? escapeHtml(prev.values.join(' / ')+' kg') : '—'}</div>`+
+      (prev.date?`<div class="combo-last-date">${escapeHtml(prev.date)}</div>`:'');
+
+    metaRow.append(pres,last);
+    card.appendChild(metaRow);
+  }else{
+    const name=document.createElement('div');
+    name.className='combo-name';
+    name.textContent=r.ejercicio||'Ejercicio';
+    card.appendChild(name);
+
     const videoSlot=document.createElement('div');
     videoSlot.className='combo-video-slot';
     if(video){
@@ -637,29 +682,21 @@ function makeComboCard(r,exIndex,rounds,vertical){
       videoSlot.appendChild(a);
     }
     card.appendChild(videoSlot);
-  }else if(video){
-    const a=document.createElement('a');
-    a.className='combo-video';
-    a.href=video;
-    a.target='_blank';
-    a.rel='noopener noreferrer';
-    a.textContent='▶ Ver video';
-    card.appendChild(a);
+
+    const pres=document.createElement('div');
+    pres.className='combo-prescription';
+    pres.innerHTML=`<b>${escapeHtml(String(r.reps||'—'))} reps</b><br>Tempo ${escapeHtml(String(r.tempo||'—'))}`;
+    card.appendChild(pres);
+
+    const prev=getPreviousWeights(r);
+    const last=document.createElement('div');
+    last.className='combo-last';
+    last.innerHTML=
+      `<div class="combo-last-title">Último registro</div>`+
+      `<div class="combo-last-values">${prev.values.length ? escapeHtml(prev.values.join(' / ')+' kg') : '—'}</div>`+
+      (prev.date?`<div class="combo-last-date">${escapeHtml(prev.date)}</div>`:'');
+    card.appendChild(last);
   }
-
-  const pres=document.createElement('div');
-  pres.className='combo-prescription';
-  pres.innerHTML=`<b>${escapeHtml(String(r.reps||'—'))} reps</b><br>Tempo ${escapeHtml(String(r.tempo||'—'))}`;
-  card.appendChild(pres);
-
-  const prev=getPreviousWeights(r);
-  const last=document.createElement('div');
-  last.className='combo-last';
-  last.innerHTML=
-    `<div class="combo-last-title">Último registro</div>`+
-    `<div class="combo-last-values">${prev.values.length ? escapeHtml(prev.values.join(' / ')+' kg') : '—'}</div>`+
-    (prev.date?`<div class="combo-last-date">${escapeHtml(prev.date)}</div>`:'');
-  card.appendChild(last);
 
   const weights=getMergedWeights(r,rounds);
   const weightBox=document.createElement('div');
