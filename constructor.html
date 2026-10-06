@@ -878,6 +878,35 @@ function dayTitle(day){
   if(!cfg || !cfg.name) return 'Día '+day;
   return cfg.type==='BLOQUE' ? 'Bloque '+cfg.name : 'Día '+cfg.name;
 }
+
+function normalizedDaySortText(v){
+  return String(v||'').trim().toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'');
+}
+function weekdayIndexFromName(name){
+  const t=normalizedDaySortText(name);
+  const weekdays=['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+  for(let i=0;i<weekdays.length;i++){
+    if(new RegExp('(^|[^a-z])'+weekdays[i]+'([^a-z]|$)').test(t)) return i;
+  }
+  return -1;
+}
+function daySortName(day){
+  const cfg=dayLabels[day];
+  return String(cfg?.name || day || '').trim();
+}
+function compareVisibleDays(a,b){
+  const an=daySortName(a), bn=daySortName(b);
+  const aw=weekdayIndexFromName(an), bw=weekdayIndexFromName(bn);
+
+  if(aw>=0 && bw>=0 && aw!==bw) return aw-bw;
+  if(aw>=0 && bw<0) return -1;
+  if(aw<0 && bw>=0) return 1;
+
+  const alpha=an.localeCompare(bn,'es',{sensitivity:'base',numeric:true});
+  if(alpha!==0) return alpha;
+  return DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b);
+}
 async function persistDayLabel(day,type,name){
   const token=String(document.getElementById('student').value||'').trim();
   if(!token) throw new Error('No hay alumna seleccionada.');
@@ -1288,7 +1317,7 @@ function renderWorkspace(){
     return;
   }
 
-  visibleDays=DAY_ORDER.filter(d=>visibleDays.includes(d) || routines[d].length);
+  visibleDays=DAY_ORDER.filter(d=>visibleDays.includes(d) || routines[d].length).sort(compareVisibleDays);
 
   const currentStudent=allKnownStudents().find(s=>String(s.token||'').trim()===token);
   const objective=String(currentStudent?.objetivo_principal||'').trim();
@@ -1427,7 +1456,7 @@ document.getElementById('addDayBtn').onclick=async()=>{
   if(ok===false) return;
   const next=DAY_ORDER.find(d=>!visibleDays.includes(d));
   if(!next){alert('Ya están visibles los 6 días disponibles.');return;}
-  visibleDays.push(next); visibleDays.sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
+  visibleDays.push(next); visibleDays.sort(compareVisibleDays);
   collapsedDays.delete(next);
   renderWorkspace();
   openEditor(next,null);
