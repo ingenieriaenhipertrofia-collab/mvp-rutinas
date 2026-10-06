@@ -305,7 +305,7 @@ function dayTitle(day){
   const key=String(day||'').trim().toUpperCase();
   const cfg=dayLabels[key];
   if(!cfg || !cfg.name) return 'Día '+key;
-  return cfg.name;
+  return (cfg.type==='BLOQUE' ? 'Bloque ' : 'Día ') + cfg.name;
 }
 
 function availableDays(){
