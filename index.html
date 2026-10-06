@@ -395,13 +395,41 @@ function dayTitle(day){
   return (cfg.type==='BLOQUE' ? 'Bloque ' : 'Día ') + cfg.name;
 }
 
+function normalizedDaySortText(v){
+  return String(v||'').trim().toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'');
+}
+function weekdayIndexFromName(name){
+  const t=normalizedDaySortText(name);
+  const weekdays=['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+  for(let i=0;i<weekdays.length;i++){
+    if(new RegExp('(^|[^a-z])'+weekdays[i]+'([^a-z]|$)').test(t)) return i;
+  }
+  return -1;
+}
+function daySortName(day){
+  const key=String(day||'').trim().toUpperCase();
+  const cfg=dayLabels[key];
+  return String(cfg?.name || key).trim();
+}
+function compareVisibleDays(a,b){
+  const an=daySortName(a), bn=daySortName(b);
+  const aw=weekdayIndexFromName(an), bw=weekdayIndexFromName(bn);
+
+  if(aw>=0 && bw>=0 && aw!==bw) return aw-bw;
+  if(aw>=0 && bw<0) return -1;
+  if(aw<0 && bw>=0) return 1;
+
+  return an.localeCompare(bn,'es',{sensitivity:'base',numeric:true});
+}
+
 function availableDays(){
   const seen=new Set(), days=[];
   allRows.forEach(r=>{
     const d=String(r.dia||'').trim();
     if(d && !seen.has(d)){ seen.add(d); days.push(d); }
   });
-  return days;
+  return days.sort(compareVisibleDays);
 }
 
 function showDaySelector(){
