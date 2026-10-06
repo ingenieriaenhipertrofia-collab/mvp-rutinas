@@ -876,7 +876,7 @@ function loadDayLabels(){
 function dayTitle(day){
   const cfg=dayLabels[day];
   if(!cfg || !cfg.name) return 'Día '+day;
-  return cfg.type==='BLOQUE' ? 'Bloque · '+cfg.name : 'Día '+cfg.name;
+  return cfg.type==='BLOQUE' ? 'Bloque '+cfg.name : 'Día '+cfg.name;
 }
 async function persistDayLabel(day,type,name){
   const token=String(document.getElementById('student').value||'').trim();
