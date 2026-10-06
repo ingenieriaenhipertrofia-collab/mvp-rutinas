@@ -17,9 +17,9 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:
 .eyebrow{color:var(--gold);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
 .progress{font-size:12px;color:var(--muted);font-weight:700}
 h2{margin:7px 0 12px;font-size:25px}
-.exercise-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:7px 0 12px}
+.exercise-title-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:9px 0 14px}
 .exercise-title-row h2{margin:0;min-width:0;flex:1}
-.exercise-title-row .video-btn{flex:0 0 auto;margin-top:1px}
+.exercise-title-row .video-btn{flex:0 0 auto;margin-top:0}
 @media (max-width:420px){
   .exercise-title-row{flex-wrap:wrap;gap:10px}
   .exercise-title-row .video-btn{margin-left:auto}
@@ -90,7 +90,7 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
     <div id="app" class="hidden">
       <button id="backToDaysBtn" class="back-days" type="button">← Elegir otro día</button>
       <div class="topline">
-        <div class="eyebrow">Día <span id="dia"></span></div>
+        <div class="eyebrow"><span id="dia"></span></div>
         <div class="progress" id="progress"></div>
       </div>
 
@@ -305,7 +305,7 @@ function dayTitle(day){
   const key=String(day||'').trim().toUpperCase();
   const cfg=dayLabels[key];
   if(!cfg || !cfg.name) return 'Día '+key;
-  return (cfg.type==='BLOQUE'?'Bloque':'Día')+' · '+cfg.name;
+  return cfg.name;
 }
 
 function availableDays(){
