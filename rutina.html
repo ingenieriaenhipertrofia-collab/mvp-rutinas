@@ -79,6 +79,15 @@ body{
   color:var(--muted);
   font-weight:700;
 }
+.summary-block{
+  text-align:right;
+}
+.updated-date{
+  margin-top:3px;
+  font-size:11px;
+  color:var(--muted);
+  font-weight:600;
+}
 .day-card{
   background:var(--day);
   border:1px solid #d8dde3;
@@ -116,6 +125,8 @@ body{
   font-weight:850;
   font-size:16px;
 }
+.exercise-top,.super-ex-top{display:block}
+.exercise-head-main,.super-ex-head-main{min-width:0}
 .exercise-meta{
   display:flex;
   gap:8px;
@@ -247,6 +258,75 @@ body{
   gap:8px;
   margin-top:10px;
 }
+.pdf-export-root .exercise-card,
+.pdf-export-root .super-ex{
+  padding:10px 11px;
+}
+.pdf-export-root .exercise-top,
+.pdf-export-root .super-ex-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.pdf-export-root .exercise-head-main,
+.pdf-export-root .super-ex-head-main{
+  min-width:0;
+  flex:1 1 auto;
+}
+.pdf-export-root .exercise-title,
+.pdf-export-root .super-ex-name{
+  font-size:17px;
+  line-height:1.15;
+}
+.pdf-export-root .exercise-meta{
+  margin-top:5px;
+  gap:5px;
+}
+.pdf-export-root .pill{
+  padding:4px 7px;
+  font-size:11px;
+}
+.pdf-export-root .video{
+  margin-top:0;
+  flex:0 0 auto;
+  padding:6px 9px;
+  font-size:11px;
+  border-radius:8px;
+  align-self:center;
+}
+.pdf-export-root .note{
+  margin-top:7px;
+  padding:7px 9px;
+  font-size:12px;
+  line-height:1.3;
+}
+.pdf-export-root .pdf-keys{
+  gap:5px;
+  margin-top:7px;
+}
+.pdf-export-root .pdf-key{
+  padding:6px 7px;
+}
+.pdf-export-root .pdf-key-title{
+  font-size:9px;
+  margin-bottom:3px;
+}
+.pdf-export-root .pdf-key-text{
+  font-size:11.5px;
+  line-height:1.25;
+}
+.pdf-export-root .day-body{
+  gap:7px;
+}
+.pdf-export-root .super-list{
+  margin-top:8px;
+  gap:6px;
+}
+.pdf-export-root .super-ex-meta{
+  margin-top:4px;
+  font-size:11.5px;
+}
 .pdf-key{
   border:1px solid var(--line);
   border-radius:9px;
@@ -297,7 +377,10 @@ body{
         <div class="eyebrow">Rutina</div>
         <h2 id="studentName">Tu entrenamiento</h2>
       </div>
-      <div id="summary" class="summary"></div>
+      <div class="summary-block">
+        <div id="summary" class="summary"></div>
+        <div id="updatedDate" class="updated-date"></div>
+      </div>
     </div>
 
     <div id="loading" class="loading">Cargando rutina…</div>
@@ -484,21 +567,29 @@ function renderIndividual(block){
   const ex=block.items[0]||{};
   return `
     <div class="exercise-card">
-      <div class="exercise-title">${esc(ex.ejercicio||'Ejercicio')}</div>
-      <div class="exercise-meta">${metaPills(block.series,ex.reps,ex.tempo,ex.carga_inicial)}</div>
+      <div class="exercise-top">
+        <div class="exercise-head-main">
+          <div class="exercise-title">${esc(ex.ejercicio||'Ejercicio')}</div>
+          <div class="exercise-meta">${metaPills(block.series,ex.reps,ex.tempo,ex.carga_inicial)}</div>
+        </div>
+        ${ex.video_url?`<a class="video" href="${esc(ex.video_url)}" target="_blank" rel="noopener noreferrer">▶ Ver video</a>`:''}
+      </div>
       ${block.note?`<div class="note">${esc(block.note)}</div>`:''}
-      ${ex.video_url?`<a class="video" href="${esc(ex.video_url)}" target="_blank" rel="noopener noreferrer">▶ Ver video</a>`:''}
       ${renderPdfKeys(ex)}
     </div>`;
 }
 function renderSuperset(block){
   const exercises=block.items.map((ex,i)=>`
     <div class="super-ex">
-      <div class="super-ex-name">${i+1}. ${esc(ex.ejercicio||'Ejercicio')}</div>
-      <div class="super-ex-meta">
-        ${esc(ex.reps||'—')} reps${ex.tempo?' · tempo '+esc(ex.tempo):''}${ex.carga_inicial?' · carga inicial '+esc(ex.carga_inicial):''}
+      <div class="super-ex-top">
+        <div class="super-ex-head-main">
+          <div class="super-ex-name">${i+1}. ${esc(ex.ejercicio||'Ejercicio')}</div>
+          <div class="super-ex-meta">
+            ${esc(ex.reps||'—')} reps${ex.tempo?' · tempo '+esc(ex.tempo):''}${ex.carga_inicial?' · carga inicial '+esc(ex.carga_inicial):''}
+          </div>
+        </div>
+        ${ex.video_url?`<a class="video" href="${esc(ex.video_url)}" target="_blank" rel="noopener noreferrer">▶ Ver video</a>`:''}
       </div>
-      ${ex.video_url?`<a class="video" href="${esc(ex.video_url)}" target="_blank" rel="noopener noreferrer">▶ Ver video</a>`:''}
       ${renderPdfKeys(ex)}
     </div>`).join('');
   return `
@@ -513,6 +604,39 @@ function renderSuperset(block){
       ${block.note?`<div class="note">${esc(block.note)}</div>`:''}
     </div>`;
 }
+function parseVersionDate(versionId){
+  const s=String(versionId||'').trim();
+  if(!s) return null;
+
+  // Formatos contemplados: YYYYMMDD_HHMMSS, YYYYMMDDHHMMSS,
+  // o cualquier version_id que comience con YYYYMMDD.
+  const m=s.match(/(\d{4})(\d{2})(\d{2})(?:[_-]?(\d{2})(\d{2})(\d{2}))?/);
+  if(!m) return null;
+
+  const y=Number(m[1]), mo=Number(m[2]), d=Number(m[3]);
+  const hh=Number(m[4]||0), mm=Number(m[5]||0), ss=Number(m[6]||0);
+  const dt=new Date(y,mo-1,d,hh,mm,ss);
+  if(Number.isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+function formatDateAR(dt){
+  return new Intl.DateTimeFormat('es-AR',{
+    day:'2-digit',
+    month:'2-digit',
+    year:'numeric'
+  }).format(dt);
+}
+
+function mostRecentRoutineDate(rows){
+  let latest=null;
+  rows.forEach(r=>{
+    const dt=parseVersionDate(r.version_id);
+    if(dt && (!latest || dt>latest)) latest=dt;
+  });
+  return latest;
+}
+
 function renderRoutine(rows,labels){
   const byDay=new Map();
   rows.forEach(r=>{
@@ -523,6 +647,10 @@ function renderRoutine(rows,labels){
   const days=DAY_ORDER.filter(d=>byDay.has(d)).sort((a,b)=>compareDayIds(a,b,labels));
   document.getElementById('summary').textContent=
     days.length+' día'+(days.length===1?'':'s')+'/semana';
+
+  const latestUpdate=mostRecentRoutineDate(rows);
+  const updatedDateEl=document.getElementById('updatedDate');
+  updatedDateEl.textContent=latestUpdate ? 'Actualizada: '+formatDateAR(latestUpdate) : '';
 
   const root=document.getElementById('routine');
   root.innerHTML=days.map(day=>{
