@@ -226,6 +226,18 @@ body{
   cursor:pointer;
 }
 .pdf-btn:hover{opacity:.94}
+.pdf-export-root{
+  position:fixed;
+  left:-100000px;
+  top:0;
+  width:900px;
+  background:var(--bg);
+  z-index:-1;
+}
+.pdf-export-root .wrap{
+  max-width:900px;
+  width:100%;
+}
 
 @media(max-width:640px){
   .main-card{padding:14px;border-radius:16px}
@@ -266,6 +278,9 @@ body{
   </div>
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 const ROUTINES_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTMHhQr9bZmTQkw67Aj7v5mRXRIC-T3tUfkO8sxtBgcYcXBid-mEV31OaBbUagrK8csm32ON9a0rVuX/pub?gid=339469399&single=true&output=csv';
 const ROUTINES_API = 'https://script.google.com/macros/s/AKfycbzOjyXStEHxg6G-qlYATcH7Po0tfrD6_ulcm0nBjxXqI8qA2-T0T0zJF4EKHS2xKgsu_w/exec';
@@ -516,9 +531,99 @@ async function loadStudentNameOptional(token){
   }
 }
 
-document.getElementById('downloadPdfBtn').addEventListener('click',()=>{
-  window.print();
-});
+function safePdfFilename(v){
+  const cleaned=String(v||'Rutina')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+  return (cleaned || 'Rutina').slice(0,80);
+}
+
+async function downloadRoutineAsSinglePagePdf(){
+  const btn=document.getElementById('downloadPdfBtn');
+  const original=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Generando PDF…';
+
+  let exportRoot=null;
+  try{
+    if(typeof html2canvas!=='function' || !window.jspdf?.jsPDF){
+      throw new Error('No se pudieron cargar las herramientas de PDF.');
+    }
+
+    // Clonamos la vista para generar siempre un PDF de ancho estable,
+    // incluso cuando el alumno lo descarga desde el celular.
+    exportRoot=document.createElement('div');
+    exportRoot.className='pdf-export-root';
+
+    const header=document.querySelector('.header')?.cloneNode(true);
+    const wrap=document.querySelector('.wrap')?.cloneNode(true);
+    if(!header || !wrap) throw new Error('No se encontró el contenido de la rutina.');
+
+    // El botón de descarga no debe formar parte del PDF.
+    wrap.querySelector('.pdf-actions')?.remove();
+
+    exportRoot.appendChild(header);
+    exportRoot.appendChild(wrap);
+    document.body.appendChild(exportRoot);
+
+    // Esperamos un frame para que el clon tome tamaños y estilos definitivos.
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+
+    const canvas=await html2canvas(exportRoot,{
+      scale:2,
+      useCORS:true,
+      backgroundColor:'#f4f5f6',
+      logging:false,
+      width:exportRoot.scrollWidth,
+      height:exportRoot.scrollHeight,
+      windowWidth:exportRoot.scrollWidth,
+      windowHeight:exportRoot.scrollHeight,
+      scrollX:0,
+      scrollY:0
+    });
+
+    const {jsPDF}=window.jspdf;
+
+    // jsPDF/PDF tiene un límite práctico de tamaño. Si la rutina fuese
+    // extraordinariamente larga, reducimos proporcionalmente manteniendo
+    // TODO el contenido dentro de una única página.
+    const MAX_PT=14000;
+    const pxToPt=72/96;
+    let pageW=canvas.width/2*pxToPt;
+    let pageH=canvas.height/2*pxToPt;
+    const shrink=Math.min(1,MAX_PT/pageW,MAX_PT/pageH);
+    pageW*=shrink;
+    pageH*=shrink;
+
+    const pdf=new jsPDF({
+      orientation:pageW>pageH?'landscape':'portrait',
+      unit:'pt',
+      format:[pageW,pageH],
+      compress:true
+    });
+
+    const img=canvas.toDataURL('image/jpeg',0.94);
+    pdf.addImage(img,'JPEG',0,0,pageW,pageH,undefined,'FAST');
+
+    const student=String(document.getElementById('studentName')?.textContent||'').trim();
+    const filename=safePdfFilename(student && student!=='Tu entrenamiento'
+      ? 'Rutina - '+student
+      : 'Rutina');
+
+    pdf.save(filename+'.pdf');
+  }catch(e){
+    console.error(e);
+    alert('No se pudo generar el PDF. Probá nuevamente en unos segundos.');
+  }finally{
+    exportRoot?.remove();
+    btn.disabled=false;
+    btn.textContent=original;
+  }
+}
+
+document.getElementById('downloadPdfBtn').addEventListener('click',downloadRoutineAsSinglePagePdf);
 
 (async()=>{
   const loading=document.getElementById('loading');
