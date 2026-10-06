@@ -238,6 +238,37 @@ body{
   max-width:900px;
   width:100%;
 }
+.pdf-keys{
+  display:none;
+}
+.pdf-export-root .pdf-keys{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:10px;
+}
+.pdf-key{
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:9px 10px;
+  background:#fff;
+  min-width:0;
+}
+.pdf-key-title{
+  font-size:10px;
+  line-height:1.2;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+.pdf-key-text{
+  font-size:11px;
+  line-height:1.35;
+  color:var(--ink);
+  overflow-wrap:anywhere;
+}
 
 @media(max-width:640px){
   .main-card{padding:14px;border-radius:16px}
@@ -377,7 +408,10 @@ function enrich(rows,lib){
       {
         id_ejercicio:String(x.id_ejercicio||'').trim(),
         ejercicio:String(x.ejercicio||'').trim(),
-        video_url:String(x.video_url||'').trim()
+        video_url:String(x.video_url||'').trim(),
+        intencion:String(x.intencion||'').trim(),
+        sensacion:String(x.sensacion||'').trim(),
+        error_evitar:String(x.error_evitar||'').trim()
       }
     ])
   );
@@ -386,7 +420,10 @@ function enrich(rows,lib){
     return {
       ...r,
       ejercicio:r.ejercicio||libRow.ejercicio||'',
-      video_url:libRow.video_url||''
+      video_url:libRow.video_url||'',
+      intencion:libRow.intencion||'',
+      sensacion:libRow.sensacion||'',
+      error_evitar:libRow.error_evitar||''
     };
   });
 }
@@ -419,6 +456,30 @@ function metaPills(series,reps,tempo,load){
   if(load) parts.push(`<span class="pill">Carga inicial ${esc(load)}</span>`);
   return parts.join('');
 }
+function renderPdfKeys(ex){
+  const intention=String(ex.intencion||'').trim();
+  const sensation=String(ex.sensacion||'').trim();
+  const error=String(ex.error_evitar||'').trim();
+
+  if(!intention && !sensation && !error) return '';
+
+  return `
+    <div class="pdf-keys">
+      <div class="pdf-key">
+        <div class="pdf-key-title">Intención</div>
+        <div class="pdf-key-text">${esc(intention||'—')}</div>
+      </div>
+      <div class="pdf-key">
+        <div class="pdf-key-title">Sensación</div>
+        <div class="pdf-key-text">${esc(sensation||'—')}</div>
+      </div>
+      <div class="pdf-key">
+        <div class="pdf-key-title">Error a evitar</div>
+        <div class="pdf-key-text">${esc(error||'—')}</div>
+      </div>
+    </div>`;
+}
+
 function renderIndividual(block){
   const ex=block.items[0]||{};
   return `
@@ -427,6 +488,7 @@ function renderIndividual(block){
       <div class="exercise-meta">${metaPills(block.series,ex.reps,ex.tempo,ex.carga_inicial)}</div>
       ${block.note?`<div class="note">${esc(block.note)}</div>`:''}
       ${ex.video_url?`<a class="video" href="${esc(ex.video_url)}" target="_blank" rel="noopener noreferrer">▶ Ver video</a>`:''}
+      ${renderPdfKeys(ex)}
     </div>`;
 }
 function renderSuperset(block){
@@ -437,6 +499,7 @@ function renderSuperset(block){
         ${esc(ex.reps||'—')} reps${ex.tempo?' · tempo '+esc(ex.tempo):''}${ex.carga_inicial?' · carga inicial '+esc(ex.carga_inicial):''}
       </div>
       ${ex.video_url?`<a class="video" href="${esc(ex.video_url)}" target="_blank" rel="noopener noreferrer">▶ Ver video</a>`:''}
+      ${renderPdfKeys(ex)}
     </div>`).join('');
   return `
     <div class="super-card">
