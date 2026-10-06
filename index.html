@@ -67,6 +67,49 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
 .key-item{margin-top:10px;line-height:1.45}
 .key-item b{display:block;margin-bottom:2px}
 
+.combined-view{margin-top:10px}
+.combo-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:8px 0 12px}
+.combo-head h2{margin:0;font-size:24px}
+.combo-rounds{font-size:16px;font-weight:800;color:var(--ink);white-space:nowrap}
+.combo-grid{display:grid;gap:10px;margin-top:10px}
+.combo-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.combo-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.combo-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;min-width:0}
+.combo-card.vertical{padding:12px}
+.combo-name{font-size:16px;font-weight:800;line-height:1.15;min-height:36px;word-break:break-word}
+.combo-card.vertical .combo-name{font-size:18px;min-height:0}
+.combo-video{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:800;background:#fff}
+.combo-prescription{margin-top:9px;padding:8px;border-radius:8px;background:#f7f8f9;border:1px solid var(--line);font-size:12px;line-height:1.35}
+.combo-prescription b{font-size:13px}
+.combo-last{margin-top:9px;padding:8px;border-left:3px solid var(--gold);border-radius:7px;background:#f7f8f9}
+.combo-last-title{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:800}
+.combo-last-values{font-size:13px;font-weight:800;margin-top:2px;word-break:break-word}
+.combo-last-date{font-size:10px;color:var(--muted);margin-top:2px}
+.combo-weights{margin-top:10px}
+.combo-weight-row{display:flex;align-items:center;gap:6px;margin-top:7px}
+.combo-weight-row label{font-size:11px;font-weight:800;min-width:22px}
+.combo-weight{width:100%;min-width:0;padding:9px 7px;border:1px solid var(--line);border-radius:8px;font-size:16px}
+.combo-unit{font-size:11px;color:var(--muted);font-weight:700}
+.combo-vertical-weightgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}
+.combo-vertical-weightgrid .combo-weight-row{margin-top:0}
+.combo-note{margin:10px 0 12px;padding:11px 12px;border-radius:10px;background:#fff8e7;border:1px solid #ead8a0;border-left:4px solid var(--gold)}
+.combo-note-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#7a651d;margin-bottom:4px}
+.combo-comment-wrap{margin-top:14px}
+.combo-comment-wrap textarea{min-height:74px}
+@media (max-width:420px){
+  .combo-grid.cols-3{gap:6px}
+  .combo-grid.cols-3 .combo-card{padding:8px 6px}
+  .combo-grid.cols-3 .combo-name{font-size:14px;min-height:48px}
+  .combo-grid.cols-3 .combo-video{font-size:11px;padding:7px 6px;width:100%}
+  .combo-grid.cols-3 .combo-prescription{font-size:11px;padding:6px}
+  .combo-grid.cols-3 .combo-prescription b{font-size:12px}
+  .combo-grid.cols-3 .combo-last-values{font-size:12px}
+  .combo-grid.cols-3 .combo-weight-row{gap:4px}
+  .combo-grid.cols-3 .combo-weight-row label{min-width:18px;font-size:10px}
+  .combo-grid.cols-3 .combo-weight{font-size:14px;padding:8px 5px}
+  .combo-grid.cols-3 .combo-unit{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -93,48 +136,67 @@ button.primary{border:0;background:var(--ink);color:#fff;border-radius:9px;paddi
         <div class="eyebrow"><span id="dia"></span></div>
         <div class="progress" id="progress"></div>
       </div>
-
-      <div class="exercise-title-row">
-        <h2 id="ejercicio"></h2>
-        <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
+      <div id="individualView">
+        <div class="exercise-title-row">
+          <h2 id="ejercicio"></h2>
+          <a id="videoBtn" class="video-btn" style="display:none" href="#" target="_blank" rel="noopener noreferrer">▶ Ver video</a>
+        </div>
+  
+        <div class="meta">
+          <div><b id="series"></b><span>series</span></div>
+          <div><b id="reps"></b><span>repeticiones</span></div>
+          <div><b id="tempo"></b><span>tempo</span></div>
+        </div>
+        
+  
+  
+        <div id="trainerNoteBox" class="trainer-note">
+          <div class="trainer-note-title">Nota del entrenador</div>
+          <div id="trainerNoteText" class="trainer-note-text"></div>
+        </div>
+  
+        <div id="keysBox" class="keys-box" style="display:none">
+          <button id="keysToggle" type="button" style="width:100%;border:0;background:#fff;padding:14px 16px;font-weight:700;text-align:left;cursor:pointer">
+            Claves de ejecución <span id="keysSign" style="float:right">＋</span>
+          </button>
+          <div id="keysContent" class="keys-content" style="display:none">
+            <div id="intencionWrap" class="key-item" style="display:none"><b>Intención</b><span id="intencion"></span></div>
+            <div id="sensacionWrap" class="key-item" style="display:none"><b>Sensación</b><span id="sensacion"></span></div>
+            <div id="errorWrap" class="key-item" style="display:none"><b>Error a evitar</b><span id="errorEvitar"></span></div>
+          </div>
+        </div>
+  
+        <div id="lastBox" class="last-box">
+          <div class="last-title">Último registro</div>
+          <div id="lastValues" class="last-values"></div>
+          <div id="lastDate" class="last-date"></div>
+        </div>
+  
+        <div class="section-title">Pesos utilizados hoy</div>
+        <div id="seriesBox"></div>
+  
+        <div class="section-title">¿Algo relevante sobre este ejercicio?</div>
+        <textarea id="comentario" placeholder="Escribí acá solo si hay algo que quieras registrar…"></textarea>
+        <div class="optional">Opcional</div>
       </div>
 
-      <div class="meta">
-        <div><b id="series"></b><span>series</span></div>
-        <div><b id="reps"></b><span>repeticiones</span></div>
-        <div><b id="tempo"></b><span>tempo</span></div>
-      </div>
-      
-
-
-      <div id="trainerNoteBox" class="trainer-note">
-        <div class="trainer-note-title">Nota del entrenador</div>
-        <div id="trainerNoteText" class="trainer-note-text"></div>
-      </div>
-
-      <div id="keysBox" class="keys-box" style="display:none">
-        <button id="keysToggle" type="button" style="width:100%;border:0;background:#fff;padding:14px 16px;font-weight:700;text-align:left;cursor:pointer">
-          Claves de ejecución <span id="keysSign" style="float:right">＋</span>
-        </button>
-        <div id="keysContent" class="keys-content" style="display:none">
-          <div id="intencionWrap" class="key-item" style="display:none"><b>Intención</b><span id="intencion"></span></div>
-          <div id="sensacionWrap" class="key-item" style="display:none"><b>Sensación</b><span id="sensacion"></span></div>
-          <div id="errorWrap" class="key-item" style="display:none"><b>Error a evitar</b><span id="errorEvitar"></span></div>
+      <div id="combinedView" class="combined-view hidden">
+        <div class="combo-head">
+          <h2 id="comboTitle"></h2>
+          <div id="comboRounds" class="combo-rounds"></div>
+        </div>
+        <div id="comboNote" class="combo-note hidden">
+          <div class="combo-note-title">Nota del entrenador</div>
+          <div id="comboNoteText"></div>
+        </div>
+        <div id="comboCards"></div>
+        <div class="combo-comment-wrap">
+          <div class="section-title">¿Algo relevante sobre esta serie combinada?</div>
+          <textarea id="comboComment" placeholder="Escribí acá solo si hay algo que quieras registrar…"></textarea>
+          <div class="optional">Opcional</div>
         </div>
       </div>
 
-      <div id="lastBox" class="last-box">
-        <div class="last-title">Último registro</div>
-        <div id="lastValues" class="last-values"></div>
-        <div id="lastDate" class="last-date"></div>
-      </div>
-
-      <div class="section-title">Pesos utilizados hoy</div>
-      <div id="seriesBox"></div>
-
-      <div class="section-title">¿Algo relevante sobre este ejercicio?</div>
-      <textarea id="comentario" placeholder="Escribí acá solo si hay algo que quieras registrar…"></textarea>
-      <div class="optional">Opcional</div>
 
       <div class="actions">
         <button id="prevBtn" class="secondary" type="button">← Ejercicio anterior</button>
@@ -177,6 +239,7 @@ const LAST_API_URL = 'https://script.google.com/macros/s/AKfycbzNU0WJaJH4mLUcVU-
 const DAY_NAMES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSosV9FXjIIj8qjK_UG5_SmH4_idZ0Fxo39TD4DPD1-DzRzsDYRFb7xGfu6OCSYrq5Ksi09RuWiAvtB/pub?gid=845125079&single=true&output=csv';
 let allRows = [];
 let rows = [];
+let items = [];
 let lastRows = [];
 let exerciseLibrary = [];
 let dayLabels = {};
@@ -227,9 +290,21 @@ function parseCsv(text){
 }
 function keyFor(r){return `${r.token}|${r.dia}|${r.orden}|${r.ejercicio}`}
 function saveCurrent(){
-  const r=rows[current], key=keyFor(r);
-  const weights=[...document.querySelectorAll('.weight')].map(el=>el.value);
-  state[key]={weights, comentario:document.getElementById('comentario').value};
+  if(!items.length) return;
+  const item=items[current];
+
+  if(item.type==='individual'){
+    const r=item.rows[0], key=keyFor(r);
+    const weights=[...document.querySelectorAll('#seriesBox .weight')].map(el=>el.value);
+    state[key]={weights, comentario:document.getElementById('comentario').value};
+  }else{
+    item.rows.forEach((r,exIndex)=>{
+      const inputs=[...document.querySelectorAll(`.combo-weight[data-ex-index="${exIndex}"]`)];
+      state[keyFor(r)]={weights:inputs.map(el=>el.value), comentario:''};
+    });
+    state[blockStateKey(item)]={comentario:document.getElementById('comboComment').value};
+  }
+
   localStorage.setItem(storageKey(), JSON.stringify(state));
 }
 function loadStored(){
@@ -336,13 +411,64 @@ function showDaySelector(){
   selector.classList.remove('hidden');
 }
 
+function isCombinedRow(r){
+  return String(r.tipo_bloque||'').trim().toUpperCase()==='COMBINADO';
+}
+
+function buildItems(dayRows){
+  const sorted=[...dayRows].sort((a,b)=>{
+    const ao=Number(a.orden_bloque)||Number(a.orden)||0;
+    const bo=Number(b.orden_bloque)||Number(b.orden)||0;
+    if(ao!==bo) return ao-bo;
+    return (Number(a.orden_en_bloque)||1)-(Number(b.orden_en_bloque)||1);
+  });
+
+  const grouped=new Map();
+  const out=[];
+
+  sorted.forEach((r,idx)=>{
+    if(!isCombinedRow(r)){
+      out.push({type:'individual',rows:[r],order:Number(r.orden_bloque)||Number(r.orden)||idx+1});
+      return;
+    }
+
+    const id=String(r.bloque_id||'').trim() || `LEGACY_${r.dia}_${r.orden_bloque||r.orden||idx}`;
+    if(!grouped.has(id)){
+      const item={type:'combined',blockId:id,rows:[],order:Number(r.orden_bloque)||Number(r.orden)||idx+1};
+      grouped.set(id,item);
+      out.push(item);
+    }
+    grouped.get(id).rows.push(r);
+  });
+
+  out.forEach(item=>{
+    if(item.type==='combined'){
+      item.rows.sort((a,b)=>(Number(a.orden_en_bloque)||1)-(Number(b.orden_en_bloque)||1));
+    }
+  });
+  return out.sort((a,b)=>a.order-b.order);
+}
+
+function blockStateKey(item){
+  const first=item.rows[0]||{};
+  return `block|${first.token||''}|${first.dia||''}|${item.blockId||''}`;
+}
+
+function combinedTypeName(count){
+  if(count===2) return 'Biserie';
+  if(count===3) return 'Triserie';
+  return 'Superserie';
+}
+
 function startDay(day){
   saveCurrentSafe();
   rows=allRows
     .filter(r=>String(r.dia||'').trim()===String(day).trim())
     .sort((a,b)=>(Number(a.orden)||0)-(Number(b.orden)||0));
 
-  if(!rows.length) return;
+  items=buildItems(rows);
+  if(!items.length) return;
+
   current=0;
   document.getElementById('daySelector').classList.add('hidden');
   document.getElementById('done').classList.add('hidden');
@@ -351,20 +477,42 @@ function startDay(day){
 }
 
 function saveCurrentSafe(){
-  if(!rows.length) return;
-  const box=document.getElementById('seriesBox');
-  if(!box || document.getElementById('app').classList.contains('hidden')) return;
+  if(!items.length) return;
+  if(document.getElementById('app').classList.contains('hidden')) return;
   saveCurrent();
 }
 
-function render(){
-  const r=rows[current];
-  document.getElementById('dia').textContent=dayTitle(r.dia);
+function getPreviousWeights(r){
+  const rec=getLastRecord(r);
+  if(!rec) return {values:[],date:''};
+  const values=[rec.peso_s1,rec.peso_s2,rec.peso_s3,rec.peso_s4,rec.peso_s5]
+    .filter(v=>String(v).trim()!=='');
+  return {values,date:rec.fecha||''};
+}
+
+function getMergedWeights(r,n){
+  const todayRec=getTodayRecord(r);
+  const fromToday=todayRec ? [
+    todayRec.hoy_s1 || '',todayRec.hoy_s2 || '',todayRec.hoy_s3 || '',
+    todayRec.hoy_s4 || '',todayRec.hoy_s5 || ''
+  ] : [];
+
+  const localSaved=state[keyFor(r)]||{weights:[],comentario:''};
+  const localWeights=localSaved.weights||[];
+  return Array.from({length:n},(_,i)=>{
+    const localValue=String(localWeights[i]??'').trim();
+    return localValue!=='' ? localWeights[i] : (fromToday[i]||'');
+  });
+}
+
+function renderIndividual(r){
+  document.getElementById('individualView').classList.remove('hidden');
+  document.getElementById('combinedView').classList.add('hidden');
+
   document.getElementById('ejercicio').textContent=r.ejercicio;
   document.getElementById('series').textContent=r.series;
   document.getElementById('reps').textContent=r.reps;
   document.getElementById('tempo').textContent=r.tempo;
-  document.getElementById('progress').textContent=`Ejercicio ${current+1} de ${rows.length}`;
 
   const videoBtn=document.getElementById('videoBtn');
   const videoUrl=String(r.video_url||'').trim();
@@ -377,9 +525,8 @@ function render(){
   }
 
   const trainerNote=String(r.nota_entrenador||'').trim();
-  const trainerNoteBox=document.getElementById('trainerNoteBox');
   document.getElementById('trainerNoteText').textContent=trainerNote;
-  trainerNoteBox.style.display=trainerNote ? 'block' : 'none';
+  document.getElementById('trainerNoteBox').style.display=trainerNote?'block':'none';
 
   const keysBox=document.getElementById('keysBox');
   const fields=[
@@ -401,36 +548,16 @@ function render(){
       wrap.style.display='none';
     }
   });
-  const keysContent=document.getElementById('keysContent');
-  const keysSign=document.getElementById('keysSign');
-  keysContent.style.display='none';
-  keysSign.textContent='＋';
-  keysBox.style.display=hasKeys ? 'block' : 'none';
+  document.getElementById('keysContent').style.display='none';
+  document.getElementById('keysSign').textContent='＋';
+  keysBox.style.display=hasKeys?'block':'none';
 
   renderLast(r);
 
   const n=Math.max(1,parseInt(r.series,10)||3);
-  const todayRec=getTodayRecord(r);
-  const fromToday=todayRec ? [
-    todayRec.hoy_s1 || '',
-    todayRec.hoy_s2 || '',
-    todayRec.hoy_s3 || '',
-    todayRec.hoy_s4 || '',
-    todayRec.hoy_s5 || ''
-  ] : [];
+  const savedWeights=getMergedWeights(r,n);
+  const localSaved=state[keyFor(r)]||{weights:[],comentario:''};
 
-  // Conserva dinámicamente tantas series como indique la rutina.
-  // Si no hay valor local, usa el valor recuperado de hoy desde Sheets.
-  const localSaved = state[keyFor(r)] || {weights:[],comentario:''};
-  const localWeights = localSaved.weights || [];
-  const mergedWeights = Array.from({length:n}, (_,i) => {
-    const localValue = String(localWeights[i] ?? '').trim();
-    return localValue !== '' ? localWeights[i] : (fromToday[i] || '');
-  });
-  const saved = {
-    weights: mergedWeights,
-    comentario: localSaved.comentario || ''
-  };
   const box=document.getElementById('seriesBox');
   box.innerHTML='';
 
@@ -442,21 +569,29 @@ function render(){
     label.textContent=`Serie ${i+1}`;
 
     const input=document.createElement('input');
-    input.type='number'; input.step='0.1'; input.inputMode='decimal';
+    input.type='number';
+    input.step='0.1';
+    input.inputMode='decimal';
     input.className='weight';
-    input.value=saved.weights[i]||'';
+    input.value=savedWeights[i]||'';
 
     const unit=document.createElement('span');
-    unit.className='unit'; unit.textContent='kg';
+    unit.className='unit';
+    unit.textContent='kg';
 
     row.append(label,input,unit);
 
     if(i>0){
       const same=document.createElement('button');
-      same.type='button'; same.className='same'; same.textContent='↺ mismo';
+      same.type='button';
+      same.className='same';
+      same.textContent='↺ mismo';
       const prev=()=>box.querySelectorAll('.weight')[i-1];
       const sync=()=>{same.style.display=prev().value?'inline-block':'none'};
-      same.addEventListener('click',()=>{input.value=prev().value; input.dispatchEvent(new Event('input',{bubbles:true}));});
+      same.addEventListener('click',()=>{
+        input.value=prev().value;
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+      });
       prev().addEventListener('input',sync);
       setTimeout(sync,0);
       row.append(same);
@@ -464,67 +599,222 @@ function render(){
     box.append(row);
   }
 
-  document.getElementById('comentario').value=saved.comentario||'';
+  document.getElementById('comentario').value=localSaved.comentario||'';
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[ch]);
+}
+
+function makeComboCard(r,exIndex,rounds,vertical){
+  const card=document.createElement('div');
+  card.className='combo-card'+(vertical?' vertical':'');
+
+  const name=document.createElement('div');
+  name.className='combo-name';
+  name.textContent=r.ejercicio||'Ejercicio';
+  card.appendChild(name);
+
+  const video=String(r.video_url||'').trim();
+  if(video){
+    const a=document.createElement('a');
+    a.className='combo-video';
+    a.href=video;
+    a.target='_blank';
+    a.rel='noopener noreferrer';
+    a.textContent='▶ Ver video';
+    card.appendChild(a);
+  }
+
+  const pres=document.createElement('div');
+  pres.className='combo-prescription';
+  pres.innerHTML=`<b>${escapeHtml(String(r.reps||'—'))} reps</b><br>Tempo ${escapeHtml(String(r.tempo||'—'))}`;
+  card.appendChild(pres);
+
+  const prev=getPreviousWeights(r);
+  const last=document.createElement('div');
+  last.className='combo-last';
+  last.innerHTML=
+    `<div class="combo-last-title">Último registro</div>`+
+    `<div class="combo-last-values">${prev.values.length ? escapeHtml(prev.values.join(' / ')+' kg') : '—'}</div>`+
+    (prev.date?`<div class="combo-last-date">${escapeHtml(prev.date)}</div>`:'');
+  card.appendChild(last);
+
+  const weights=getMergedWeights(r,rounds);
+  const weightBox=document.createElement('div');
+  weightBox.className=vertical?'combo-vertical-weightgrid':'combo-weights';
+
+  for(let i=0;i<rounds;i++){
+    const row=document.createElement('div');
+    row.className='combo-weight-row';
+
+    const label=document.createElement('label');
+    label.textContent=`V${i+1}`;
+
+    const input=document.createElement('input');
+    input.type='number';
+    input.step='0.1';
+    input.inputMode='decimal';
+    input.className='combo-weight';
+    input.dataset.exIndex=String(exIndex);
+    input.dataset.round=String(i);
+    input.value=weights[i]||'';
+
+    const unit=document.createElement('span');
+    unit.className='combo-unit';
+    unit.textContent='kg';
+
+    row.append(label,input,unit);
+    weightBox.appendChild(row);
+  }
+
+  card.appendChild(weightBox);
+  return card;
+}
+
+function renderCombined(item){
+  document.getElementById('individualView').classList.add('hidden');
+  document.getElementById('combinedView').classList.remove('hidden');
+
+  const count=item.rows.length;
+  const rounds=Math.max(1,parseInt(item.rows[0]?.series,10)||3);
+
+  document.getElementById('comboTitle').textContent=combinedTypeName(count);
+  document.getElementById('comboRounds').textContent=`${rounds} vuelta${rounds===1?'':'s'}`;
+
+  const note=String(item.rows[0]?.nota_entrenador||'').trim();
+  document.getElementById('comboNoteText').textContent=note;
+  document.getElementById('comboNote').classList.toggle('hidden',!note);
+
+  const host=document.getElementById('comboCards');
+  host.innerHTML='';
+
+  if(count<=3){
+    const grid=document.createElement('div');
+    grid.className=`combo-grid cols-${count}`;
+    item.rows.forEach((r,i)=>grid.appendChild(makeComboCard(r,i,rounds,false)));
+    host.appendChild(grid);
+  }else{
+    const grid=document.createElement('div');
+    grid.className='combo-grid';
+    item.rows.forEach((r,i)=>grid.appendChild(makeComboCard(r,i,rounds,true)));
+    host.appendChild(grid);
+  }
+
+  const blockSaved=state[blockStateKey(item)]||{comentario:''};
+  document.getElementById('comboComment').value=blockSaved.comentario||'';
+}
+
+function render(){
+  const item=items[current];
+  if(!item) return;
+
+  const r=item.rows[0];
+  document.getElementById('dia').textContent=dayTitle(r.dia);
+
+  if(item.type==='combined'){
+    document.getElementById('progress').textContent=`Bloque ${current+1} de ${items.length}`;
+    renderCombined(item);
+  }else{
+    document.getElementById('progress').textContent=`Ejercicio ${current+1} de ${items.length}`;
+    renderIndividual(r);
+  }
+
   document.getElementById('prevBtn').style.visibility=current===0?'hidden':'visible';
-  document.getElementById('nextBtn').textContent=current===rows.length-1?'Finalizar entrenamiento':'Siguiente ejercicio →';
+  document.getElementById('prevBtn').textContent='← Anterior';
+  document.getElementById('nextBtn').textContent=current===items.length-1?'Finalizar entrenamiento':'Siguiente →';
   document.getElementById('status').textContent='';
 }
 
 function hasMeaningfulData(saved){
-  const hasWeight = (saved.weights || []).some(v => String(v).trim() !== '');
-  const hasComment = String(saved.comentario || '').trim() !== '';
-  return hasWeight || hasComment;
+  const hasWeight=(saved.weights||[]).some(v=>String(v).trim()!=='');
+  const hasComment=String(saved.comentario||'').trim()!=='';
+  return hasWeight||hasComment;
 }
 
-function sendCurrent(){
-  const r=rows[current], saved=state[keyFor(r)]||{weights:[],comentario:''};
+async function postRecord(r,saved){
+  if(!hasMeaningfulData(saved)) return false;
 
-  // Si no hay ningún peso ni comentario, no crea una fila vacía en Google Forms.
-  if(!hasMeaningfulData(saved)){
-    return false;
+  const body=new URLSearchParams({
+    'entry.1517609992':r.token||'',
+    'entry.972414767':r.dia||'',
+    'entry.358785913':r.ejercicio||'',
+    'entry.885442605':saved.weights?.[0]||'',
+    'entry.1707252272':saved.weights?.[1]||'',
+    'entry.1694946076':saved.weights?.[2]||'',
+    'entry.2046290839':saved.weights?.[3]||'',
+    'entry.1643803565':saved.weights?.[4]||'',
+    'entry.813523569':saved.comentario||''
+  });
+
+  await fetch(
+    'https://docs.google.com/forms/d/e/1FAIpQLScIL5PUjSIgu19oF0nnNEcuQpafBtBVYNKYZjoMCpwYzuVFAQ/formResponse',
+    {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:body.toString()
+    }
+  );
+  return true;
+}
+
+async function sendCurrent(){
+  const item=items[current];
+  if(!item) return 0;
+
+  if(item.type==='individual'){
+    const r=item.rows[0];
+    const saved=state[keyFor(r)]||{weights:[],comentario:''};
+    return (await postRecord(r,saved))?1:0;
   }
 
-  document.getElementById('fToken').value=r.token||'';
-  document.getElementById('fDia').value=r.dia||'';
-  document.getElementById('fEjercicio').value=r.ejercicio||'';
-  document.getElementById('fS1').value=saved.weights[0]||'';
-  document.getElementById('fS2').value=saved.weights[1]||'';
-  document.getElementById('fS3').value=saved.weights[2]||'';
-  document.getElementById('fS4').value=saved.weights[3]||'';
-  document.getElementById('fS5').value=saved.weights[4]||'';
-  document.getElementById('fComentario').value=saved.comentario||'';
-  document.getElementById('sendForm').submit();
-  return true;
+  const sharedComment=String((state[blockStateKey(item)]||{}).comentario||'');
+  let sent=0;
+  for(const r of item.rows){
+    const own=state[keyFor(r)]||{weights:[],comentario:''};
+    const saved={weights:own.weights||[],comentario:sharedComment};
+    if(await postRecord(r,saved)) sent++;
+  }
+  return sent;
 }
 
 document.getElementById('keysToggle').addEventListener('click',()=>{
   const content=document.getElementById('keysContent');
   const sign=document.getElementById('keysSign');
   const opening=content.style.display==='none' || content.style.display==='';
-  content.style.display=opening ? 'block' : 'none';
-  sign.textContent=opening ? '−' : '＋';
+  content.style.display=opening?'block':'none';
+  sign.textContent=opening?'−':'＋';
 });
 
 document.getElementById('prevBtn').addEventListener('click',()=>{
   saveCurrent();
   if(current>0){current--;render()}
 });
-document.getElementById('nextBtn').addEventListener('click',()=>{
+
+document.getElementById('nextBtn').addEventListener('click',async()=>{
   saveCurrent();
-  const sent = sendCurrent();
-  document.getElementById('status').textContent = sent ? '✓ Guardado' : 'Sin datos para guardar';
+  const sent=await sendCurrent();
+  document.getElementById('status').textContent=sent>0?'✓ Guardado':'Sin datos para guardar';
+
   setTimeout(()=>{
-    if(current<rows.length-1){current++;render()}
-    else{
+    if(current<items.length-1){
+      current++;
+      render();
+    }else{
       document.getElementById('app').classList.add('hidden');
       document.getElementById('done').classList.remove('hidden');
     }
-  },350);
+  },250);
 });
+
 document.getElementById('reviewBtn').addEventListener('click',()=>{
   document.getElementById('done').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  current=0; render();
+  current=0;
+  render();
 });
 
 document.getElementById('backToDaysBtn').addEventListener('click',()=>{
@@ -575,29 +865,8 @@ async function loadLastRowsForToken(token){
 }
 
 function refreshHistoryOnCurrentExercise(){
-  if(!rows.length || document.getElementById('app').classList.contains('hidden')) return;
-
-  const r=rows[current];
-  renderLast(r);
-
-  const todayRec=getTodayRecord(r);
-  if(!todayRec) return;
-
-  const fromToday=[
-    todayRec.hoy_s1 || '',
-    todayRec.hoy_s2 || '',
-    todayRec.hoy_s3 || '',
-    todayRec.hoy_s4 || '',
-    todayRec.hoy_s5 || ''
-  ];
-
-  const inputs=[...document.querySelectorAll('#seriesBox .weight')];
-  inputs.forEach((input,i)=>{
-    if(String(input.value||'').trim()==='' && String(fromToday[i]||'').trim()!==''){
-      input.value=fromToday[i];
-      input.dispatchEvent(new Event('input',{bubbles:true}));
-    }
-  });
+  if(!items.length || document.getElementById('app').classList.contains('hidden')) return;
+  render();
 }
 
 (async()=>{
