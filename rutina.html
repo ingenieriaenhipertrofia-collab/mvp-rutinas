@@ -279,8 +279,38 @@ function esc(s){
 function dayTitle(day,labels){
   const cfg=labels[day];
   if(!cfg || !cfg.name) return 'Día '+day;
-  return cfg.type==='BLOQUE' ? 'Bloque · '+cfg.name : 'Día '+cfg.name;
+  return cfg.type==='BLOQUE' ? 'Bloque '+cfg.name : 'Día '+cfg.name;
 }
+
+function normalizedDaySortText(v){
+  return String(v||'').trim().toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'');
+}
+function weekdayIndexFromName(name){
+  const t=normalizedDaySortText(name);
+  const weekdays=['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+  for(let i=0;i<weekdays.length;i++){
+    if(new RegExp('(^|[^a-z])'+weekdays[i]+'([^a-z]|$)').test(t)) return i;
+  }
+  return -1;
+}
+function daySortName(day,labels){
+  const cfg=labels[day];
+  return String(cfg?.name || day || '').trim();
+}
+function compareDayIds(a,b,labels){
+  const an=daySortName(a,labels), bn=daySortName(b,labels);
+  const aw=weekdayIndexFromName(an), bw=weekdayIndexFromName(bn);
+
+  if(aw>=0 && bw>=0 && aw!==bw) return aw-bw;
+  if(aw>=0 && bw<0) return -1;
+  if(aw<0 && bw>=0) return 1;
+
+  const alpha=an.localeCompare(bn,'es',{sensitivity:'base',numeric:true});
+  if(alpha!==0) return alpha;
+  return DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b);
+}
+
 function buildDayLabels(rows,token){
   const labels={};
   rows.forEach(r=>{
@@ -380,7 +410,7 @@ function renderRoutine(rows,labels){
     if(!byDay.has(d)) byDay.set(d,[]);
     byDay.get(d).push(r);
   });
-  const days=DAY_ORDER.filter(d=>byDay.has(d));
+  const days=DAY_ORDER.filter(d=>byDay.has(d)).sort((a,b)=>compareDayIds(a,b,labels));
   document.getElementById('summary').textContent=
     days.length+' día'+(days.length===1?'':'s')+'/semana';
 
