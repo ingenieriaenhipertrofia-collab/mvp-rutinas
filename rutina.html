@@ -291,11 +291,15 @@ body{
 .pdf-export-root .video{
   margin-top:0;
   flex:0 0 auto;
-  padding:6px 9px;
-  font-size:12.5px;
+  min-width:92px;
+  min-height:34px;
+  padding:8px 12px;
+  font-size:13px;
   line-height:1.1;
-  border-radius:8px;
+  border-radius:9px;
   align-self:center;
+  justify-content:center;
+  align-items:center;
 }
 .pdf-export-root .note{
   margin-top:6px;
@@ -838,6 +842,27 @@ async function downloadRoutineAsSinglePagePdf(){
 
     const img=canvas.toDataURL('image/jpeg',0.94);
     pdf.addImage(img,'JPEG',0,0,pageW,pageH,undefined,'FAST');
+
+    // html2canvas rasteriza los enlaces; recreamos encima áreas clickeables
+    // exactamente donde aparecen los botones "Ver video".
+    const rootRect=exportRoot.getBoundingClientRect();
+    const scaleX=pageW/rootRect.width;
+    const scaleY=pageH/rootRect.height;
+
+    exportRoot.querySelectorAll('a.video[href]').forEach(link=>{
+      const href=String(link.getAttribute('href')||'').trim();
+      if(!href) return;
+
+      const r=link.getBoundingClientRect();
+      const x=(r.left-rootRect.left)*scaleX;
+      const y=(r.top-rootRect.top)*scaleY;
+      const w=r.width*scaleX;
+      const h=r.height*scaleY;
+
+      if(w>0 && h>0){
+        pdf.link(x,y,w,h,{url:href});
+      }
+    });
 
     const student=String(document.getElementById('studentName')?.textContent||'').trim();
     const filename=safePdfFilename(student && student!=='Tu entrenamiento'
