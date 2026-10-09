@@ -859,6 +859,7 @@ async function postRecord(r,saved){
   const body=new URLSearchParams({
     'entry.1517609992':r.token||'',
     'entry.972414767':r.dia||'',
+    'entry.203290787':dayTitle(r.dia),
     'entry.358785913':r.ejercicio||'',
     'entry.885442605':saved.weights?.[0]||'',
     'entry.1707252272':saved.weights?.[1]||'',
