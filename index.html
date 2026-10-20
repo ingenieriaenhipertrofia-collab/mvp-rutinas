@@ -377,6 +377,54 @@ function getLastRecord(r){
   );
 }
 
+function formatPreviousRecordDate(value){
+  const raw=String(value||'').trim();
+  if(!raw) return '';
+
+  let y,m,d;
+
+  let match=raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:\D|$)/);
+  if(match){
+    d=Number(match[1]);
+    m=Number(match[2]);
+    y=Number(match[3]);
+  }else{
+    match=raw.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:\D|$)/);
+    if(match){
+      y=Number(match[1]);
+      m=Number(match[2]);
+      d=Number(match[3]);
+    }else{
+      const monthMap={
+        jan:1,feb:2,mar:3,apr:4,may:5,jun:6,
+        jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+        ene:1,abr:4,ago:8,dic:12
+      };
+      match=raw.match(/\b(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)?\s*([A-Za-zÁÉÍÓÚáéíóú]{3,})\s+(\d{1,2})\s+(\d{4})\b/i);
+      if(match){
+        const key=match[1].normalize('NFD').replace(/[\u0300-\u036f]/g,'').slice(0,3).toLowerCase();
+        m=monthMap[key];
+        d=Number(match[2]);
+        y=Number(match[3]);
+      }
+    }
+  }
+
+  if(!y || !m || !d || m<1 || m>12 || d<1 || d>31) return raw;
+
+  const utc=new Date(Date.UTC(y,m-1,d));
+  if(
+    utc.getUTCFullYear()!==y ||
+    utc.getUTCMonth()!==m-1 ||
+    utc.getUTCDate()!==d
+  ) return raw;
+
+  const weekdays=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+  return `${weekdays[utc.getUTCDay()]} ${d}, ${months[m-1]} ${y}`;
+}
+
 function getTodayRecord(r){
   const token=(r.token||'').trim();
   const ex=(r.ejercicio||'').trim().toLowerCase();
@@ -397,7 +445,7 @@ function renderLast(r){
   const vals=[rec.peso_s1,rec.peso_s2,rec.peso_s3].filter(v=>String(v).trim()!=='');
   if(!vals.length){ box.style.display='none'; return; }
   document.getElementById('lastValues').textContent=vals.join(' / ')+' kg';
-  document.getElementById('lastDate').textContent=rec.fecha ? 'Registro anterior: '+rec.fecha : '';
+  document.getElementById('lastDate').textContent=rec.fecha ? 'Registro anterior: '+formatPreviousRecordDate(rec.fecha) : '';
   box.style.display='block';
 }
 
@@ -734,7 +782,7 @@ function makeComboCard(r,exIndex,rounds,vertical,totalExercises){
     last.innerHTML=
       `<div class="combo-last-title">Último registro</div>`+
       `<div class="combo-last-values">${prev.values.length ? escapeHtml(prev.values.join(' / ')+' kg') : '—'}</div>`+
-      (prev.date?`<div class="combo-last-date">${escapeHtml(prev.date)}</div>`:'');
+      (prev.date?`<div class="combo-last-date">${escapeHtml(formatPreviousRecordDate(prev.date))}</div>`:'');
 
     metaRow.append(pres,last);
     card.appendChild(metaRow);
@@ -768,7 +816,7 @@ function makeComboCard(r,exIndex,rounds,vertical,totalExercises){
     last.innerHTML=
       `<div class="combo-last-title">Último registro</div>`+
       `<div class="combo-last-values">${prev.values.length ? escapeHtml(prev.values.join(' / ')+' kg') : '—'}</div>`+
-      (prev.date?`<div class="combo-last-date">${escapeHtml(prev.date)}</div>`:'');
+      (prev.date?`<div class="combo-last-date">${escapeHtml(formatPreviousRecordDate(prev.date))}</div>`:'');
     card.appendChild(last);
   }
 
