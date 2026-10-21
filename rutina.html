@@ -432,7 +432,7 @@ body{
     <div id="routine"></div>
   </div>
   <div class="footer">Rutina actualizada por tu entrenador.</div>
-  <div class="pdf-actions">
+  <div class="pdf-actions" id="pdfActions" style="display:none">
     <button id="downloadPdfBtn" class="pdf-btn" type="button">Compartir / descargar PDF</button>
   </div>
 </div>
@@ -873,7 +873,21 @@ async function downloadRoutineAsSinglePagePdf(){
     const pdfBlob=pdf.output('blob');
     const pdfFile=new File([pdfBlob],fullFilename,{type:'application/pdf'});
 
+    const uaDataMobile =
+      typeof navigator.userAgentData?.mobile==='boolean'
+        ? navigator.userAgentData.mobile
+        : false;
+    const userAgent=String(navigator.userAgent||'');
+    const isTouchIpadOS=
+      /Macintosh/i.test(userAgent) &&
+      Number(navigator.maxTouchPoints||0)>1;
+    const isMobileOrTablet=
+      uaDataMobile ||
+      /Android|iPhone|iPod|iPad/i.test(userAgent) ||
+      isTouchIpadOS;
+
     const canShareFile =
+      isMobileOrTablet &&
       typeof navigator.share==='function' &&
       typeof navigator.canShare==='function' &&
       navigator.canShare({files:[pdfFile]});
@@ -886,16 +900,16 @@ async function downloadRoutineAsSinglePagePdf(){
           text:'Rutina de entrenamiento'
         });
       }catch(shareError){
-        // Si el usuario cerró la hoja de compartir, no descargamos nada
-        // automáticamente. Si compartir falló por otro motivo, conservamos
-        // el comportamiento anterior como respaldo.
+        // Si el usuario cerró la hoja de compartir, no descargamos nada.
+        // Si compartir falló por otro motivo, descargamos como respaldo.
         if(shareError?.name!=='AbortError'){
           console.warn('No se pudo compartir el PDF; se descargará como respaldo.',shareError);
           pdf.save(fullFilename);
         }
       }
     }else{
-      // Navegadores/equipos sin Web Share API para archivos: descarga normal.
+      // En escritorio siempre descargamos. En móvil/tablet también se descarga
+      // cuando el navegador no permite compartir archivos PDF.
       pdf.save(fullFilename);
     }
   }catch(e){
@@ -933,7 +947,13 @@ document.getElementById('downloadPdfBtn').addEventListener('click',downloadRouti
     const labels=buildDayLabels(parseCSV(namesText),token);
     loading.style.display='none';
     renderRoutine(rows,labels);
-    loadStudentNameOptional(token);
+    await loadStudentNameOptional(token);
+
+    // La rutina ya está renderizada y la información complementaria
+    // terminó de cargarse o intentarse cargar: recién ahora habilitamos
+    // visualmente la acción de compartir/descargar.
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    document.getElementById('pdfActions').style.display='flex';
   }catch(e){
     loading.className='error';
     loading.textContent='No se pudo cargar la rutina: '+e.message;
