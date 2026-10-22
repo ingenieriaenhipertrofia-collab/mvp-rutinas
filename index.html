@@ -887,7 +887,7 @@ function makeComboCard(r,exIndex,rounds,vertical,totalExercises){
       const same=document.createElement('button');
       same.type='button';
       same.className='combo-same';
-      const compactSame = Number(totalExercises||0) >= 3;
+      const compactSame = Number(totalExercises||0) >= 2;
       same.textContent = compactSame ? '↺' : '↺ mismo';
       if(compactSame){
         same.title='Mismo peso';
