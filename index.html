@@ -347,6 +347,47 @@ function parseCsv(text){
   });
 }
 function keyFor(r){return `${r.token}|${r.dia}|${r.orden}|${r.ejercicio}`}
+
+function cleanWeightInput(value){
+  const raw=String(value??'');
+  let out='';
+  let separator='';
+
+  for(const ch of raw){
+    if(/\d/.test(ch)){
+      out+=ch;
+    }else if((ch==='.' || ch===',') && !separator){
+      separator=ch;
+      out+=ch;
+    }
+  }
+
+  if(out.startsWith('.') || out.startsWith(',')) out='0'+out;
+  return out;
+}
+
+function normalizeWeightForSubmit(value){
+  const clean=cleanWeightInput(value).trim();
+  if(!clean) return '';
+
+  // Google Forms/Sheets de esta app trabajan con configuración regional
+  // que usa coma decimal. Aceptamos ambos separadores en pantalla y
+  // enviamos siempre coma para evitar que "30.5" se interprete como fecha.
+  return clean.replace('.',',');
+}
+
+function configureWeightInput(input){
+  input.type='text';
+  input.inputMode='decimal';
+  input.autocomplete='off';
+  input.spellcheck=false;
+  input.setAttribute('pattern','[0-9]*[.,]?[0-9]*');
+  input.addEventListener('input',()=>{
+    const clean=cleanWeightInput(input.value);
+    if(input.value!==clean) input.value=clean;
+  });
+}
+
 function saveCurrent(){
   if(!items.length) return;
   const item=items[current];
@@ -703,9 +744,7 @@ function renderIndividual(r){
     label.textContent=`Serie ${i+1}`;
 
     const input=document.createElement('input');
-    input.type='number';
-    input.step='0.1';
-    input.inputMode='decimal';
+    configureWeightInput(input);
     input.className='weight';
     input.value=savedWeights[i]||'';
 
@@ -832,9 +871,7 @@ function makeComboCard(r,exIndex,rounds,vertical,totalExercises){
     label.textContent=`V${i+1}`;
 
     const input=document.createElement('input');
-    input.type='number';
-    input.step='0.1';
-    input.inputMode='decimal';
+    configureWeightInput(input);
     input.className='combo-weight';
     input.dataset.exIndex=String(exIndex);
     input.dataset.round=String(i);
@@ -989,11 +1026,11 @@ async function postRecord(r,saved){
     'entry.972414767':r.dia||'',
     'entry.203290787':dayTitle(r.dia),
     'entry.358785913':r.ejercicio||'',
-    'entry.885442605':saved.weights?.[0]||'',
-    'entry.1707252272':saved.weights?.[1]||'',
-    'entry.1694946076':saved.weights?.[2]||'',
-    'entry.2046290839':saved.weights?.[3]||'',
-    'entry.1643803565':saved.weights?.[4]||'',
+    'entry.885442605':normalizeWeightForSubmit(saved.weights?.[0]),
+    'entry.1707252272':normalizeWeightForSubmit(saved.weights?.[1]),
+    'entry.1694946076':normalizeWeightForSubmit(saved.weights?.[2]),
+    'entry.2046290839':normalizeWeightForSubmit(saved.weights?.[3]),
+    'entry.1643803565':normalizeWeightForSubmit(saved.weights?.[4]),
     'entry.813523569':saved.comentario||''
   });
 
