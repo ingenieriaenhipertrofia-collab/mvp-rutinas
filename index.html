@@ -303,6 +303,10 @@ let exerciseLibrary = [];
 let dayLabels = {};
 let current = 0;
 let state = {};
+let pendingSync = {};
+let syncInProgress = false;
+const PAGE_SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+const PENDING_SYNC_KEY = 'mvpRutinaPending:v1';
 
 function localDateKey(){
   const d = new Date();
@@ -314,6 +318,97 @@ function localDateKey(){
 
 function storageKey(){
   return `mvpRutinaState:v4:${localDateKey()}`;
+}
+
+function loadPendingSync(){
+  try{
+    pendingSync=JSON.parse(localStorage.getItem(PENDING_SYNC_KEY)||'{}')||{};
+  }catch(e){
+    pendingSync={};
+  }
+
+  // Cualquier borrador que haya quedado de una apertura anterior de la app
+  // debe poder sincronizarse aunque la alumna haya cerrado antes de avanzar.
+  let changed=false;
+  Object.values(pendingSync).forEach(item=>{
+    if(item && item.pageSessionId!==PAGE_SESSION_ID && item.ready!==true){
+      item.ready=true;
+      changed=true;
+    }
+  });
+  if(changed) savePendingSync();
+}
+
+function savePendingSync(){
+  localStorage.setItem(PENDING_SYNC_KEY,JSON.stringify(pendingSync));
+}
+
+function pendingIdFor(r){
+  return `${localDateKey()}|${keyFor(r)}`;
+}
+
+function upsertPendingRecord(r,saved,ready=false){
+  const id=pendingIdFor(r);
+
+  if(!hasMeaningfulData(saved)){
+    if(pendingSync[id]){
+      delete pendingSync[id];
+      savePendingSync();
+    }
+    return false;
+  }
+
+  pendingSync[id]={
+    id,
+    token:String(r.token||''),
+    dia:String(r.dia||''),
+    nombre_dia_visible:dayTitle(r.dia),
+    ejercicio:String(r.ejercicio||''),
+    weights:Array.from({length:5},(_,i)=>String(saved.weights?.[i]??'')),
+    comentario:String(saved.comentario||''),
+    ready:Boolean(ready),
+    pageSessionId:PAGE_SESSION_ID,
+    updatedAt:Date.now()
+  };
+  savePendingSync();
+  return true;
+}
+
+function queueCurrentSnapshot(ready=false){
+  const item=items[current];
+  if(!item) return 0;
+
+  let count=0;
+  if(item.type==='individual'){
+    const r=item.rows[0];
+    const saved=state[keyFor(r)]||{weights:[],comentario:''};
+    if(upsertPendingRecord(r,saved,ready)) count++;
+    return count;
+  }
+
+  const sharedComment=String((state[blockStateKey(item)]||{}).comentario||'');
+  item.rows.forEach(r=>{
+    const own=state[keyFor(r)]||{weights:[],comentario:''};
+    const saved={weights:own.weights||[],comentario:sharedComment};
+    if(upsertPendingRecord(r,saved,ready)) count++;
+  });
+  return count;
+}
+
+function currentMeaningfulCount(){
+  const item=items[current];
+  if(!item) return 0;
+
+  if(item.type==='individual'){
+    const r=item.rows[0];
+    return hasMeaningfulData(state[keyFor(r)]||{weights:[],comentario:''})?1:0;
+  }
+
+  const sharedComment=String((state[blockStateKey(item)]||{}).comentario||'');
+  return item.rows.reduce((n,r)=>{
+    const own=state[keyFor(r)]||{weights:[],comentario:''};
+    return n+(hasMeaningfulData({weights:own.weights||[],comentario:sharedComment})?1:0);
+  },0);
 }
 
 function stripBom(s){return s.replace(/^\uFEFF/,'')}
@@ -1018,53 +1113,96 @@ function hasMeaningfulData(saved){
   return hasWeight||hasComment;
 }
 
-async function postRecord(r,saved){
-  if(!hasMeaningfulData(saved)) return false;
-
+async function postPendingRecord(item){
   const body=new URLSearchParams({
-    'entry.1517609992':r.token||'',
-    'entry.972414767':r.dia||'',
-    'entry.203290787':dayTitle(r.dia),
-    'entry.358785913':r.ejercicio||'',
-    'entry.885442605':normalizeWeightForSubmit(saved.weights?.[0]),
-    'entry.1707252272':normalizeWeightForSubmit(saved.weights?.[1]),
-    'entry.1694946076':normalizeWeightForSubmit(saved.weights?.[2]),
-    'entry.2046290839':normalizeWeightForSubmit(saved.weights?.[3]),
-    'entry.1643803565':normalizeWeightForSubmit(saved.weights?.[4]),
-    'entry.813523569':saved.comentario||''
+    'entry.1517609992':item.token||'',
+    'entry.972414767':item.dia||'',
+    'entry.203290787':item.nombre_dia_visible||'',
+    'entry.358785913':item.ejercicio||'',
+    'entry.885442605':normalizeWeightForSubmit(item.weights?.[0]),
+    'entry.1707252272':normalizeWeightForSubmit(item.weights?.[1]),
+    'entry.1694946076':normalizeWeightForSubmit(item.weights?.[2]),
+    'entry.2046290839':normalizeWeightForSubmit(item.weights?.[3]),
+    'entry.1643803565':normalizeWeightForSubmit(item.weights?.[4]),
+    'entry.813523569':item.comentario||''
   });
 
-  await fetch(
-    'https://docs.google.com/forms/d/e/1FAIpQLScIL5PUjSIgu19oF0nnNEcuQpafBtBVYNKYZjoMCpwYzuVFAQ/formResponse',
-    {
-      method:'POST',
-      mode:'no-cors',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:body.toString()
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
+  try{
+    await fetch(
+      'https://docs.google.com/forms/d/e/1FAIpQLScIL5PUjSIgu19oF0nnNEcuQpafBtBVYNKYZjoMCpwYzuVFAQ/formResponse',
+      {
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:body.toString(),
+        signal:controller.signal
+      }
+    );
+    return true;
+  }finally{
+    clearTimeout(timeout);
+  }
+}
+
+async function flushPendingQueue(){
+  if(syncInProgress || navigator.onLine===false) return;
+  syncInProgress=true;
+
+  try{
+    const candidates=Object.values(pendingSync)
+      .filter(item=>item && item.ready===true)
+      .sort((a,b)=>(Number(a.updatedAt)||0)-(Number(b.updatedAt)||0));
+
+    for(const item of candidates){
+      // Puede haber sido actualizado o eliminado mientras esperábamos.
+      const currentPending=pendingSync[item.id];
+      if(!currentPending || currentPending.ready!==true) continue;
+
+      try{
+        const sentSnapshot=JSON.stringify(currentPending);
+        await postPendingRecord(currentPending);
+
+        // Solo eliminamos si durante el envío no cambió el contenido local.
+        if(pendingSync[item.id] && JSON.stringify(pendingSync[item.id])===sentSnapshot){
+          delete pendingSync[item.id];
+          savePendingSync();
+        }
+      }catch(e){
+        // Con señal insuficiente el dato permanece local y se reintentará luego.
+        console.warn('Registro pendiente de sincronización.',e);
+        break;
+      }
     }
-  );
-  return true;
+  }finally{
+    syncInProgress=false;
+  }
 }
 
-async function sendCurrent(){
-  const item=items[current];
-  if(!item) return 0;
-
-  if(item.type==='individual'){
-    const r=item.rows[0];
-    const saved=state[keyFor(r)]||{weights:[],comentario:''};
-    return (await postRecord(r,saved))?1:0;
-  }
-
-  const sharedComment=String((state[blockStateKey(item)]||{}).comentario||'');
-  let sent=0;
-  for(const r of item.rows){
-    const own=state[keyFor(r)]||{weights:[],comentario:''};
-    const saved={weights:own.weights||[],comentario:sharedComment};
-    if(await postRecord(r,saved)) sent++;
-  }
-  return sent;
+function sendCurrent(){
+  const count=currentMeaningfulCount();
+  queueCurrentSnapshot(true);
+  void flushPendingQueue();
+  return count;
 }
+
+document.getElementById('app').addEventListener('input',e=>{
+  const target=e.target;
+  if(!target?.matches?.('.weight,.combo-weight,#comentario,#comboComment')) return;
+  saveCurrentSafe();
+  queueCurrentSnapshot(false);
+});
+
+window.addEventListener('online',()=>{
+  void flushPendingQueue();
+});
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    void flushPendingQueue();
+  }
+});
 
 document.getElementById('keysToggle').addEventListener('click',()=>{
   const content=document.getElementById('keysContent');
@@ -1076,13 +1214,15 @@ document.getElementById('keysToggle').addEventListener('click',()=>{
 
 document.getElementById('prevBtn').addEventListener('click',()=>{
   saveCurrent();
+  queueCurrentSnapshot(true);
+  void flushPendingQueue();
   if(current>0){current--;render()}
 });
 
-document.getElementById('nextBtn').addEventListener('click',async()=>{
+document.getElementById('nextBtn').addEventListener('click',()=>{
   saveCurrent();
-  const sent=await sendCurrent();
-  document.getElementById('status').textContent=sent>0?'✓ Guardado':'Sin datos para guardar';
+  const savedCount=sendCurrent();
+  document.getElementById('status').textContent=savedCount>0?'✓ Guardado':'Sin datos para guardar';
 
   setTimeout(()=>{
     if(current<items.length-1){
@@ -1104,6 +1244,8 @@ document.getElementById('reviewBtn').addEventListener('click',()=>{
 
 document.getElementById('backToDaysBtn').addEventListener('click',()=>{
   saveCurrentSafe();
+  queueCurrentSnapshot(true);
+  void flushPendingQueue();
   showDaySelector();
 });
 
@@ -1157,6 +1299,8 @@ function refreshHistoryOnCurrentExercise(){
 (async()=>{
   try{
     loadStored();
+    loadPendingSync();
+    void flushPendingQueue();
 
     const params=new URLSearchParams(window.location.search);
     const urlToken=(params.get('token')||'lara-test').trim();
@@ -1195,6 +1339,7 @@ function refreshHistoryOnCurrentExercise(){
 
     document.getElementById('loading').classList.add('hidden');
     showDaySelector();
+    void flushPendingQueue();
 
     // Evita advertencias por promesas no observadas; no se espera para mostrar la app.
     void historyPromise;
